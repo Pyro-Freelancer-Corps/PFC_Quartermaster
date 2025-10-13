@@ -52,6 +52,10 @@ const HuntSubmission = {
   update: jest.fn()
 };
 
+const Accolade = {
+  findAll: jest.fn()
+};
+
 // Simple mock Sequelize-like instance
 const sequelize = {
   models: {
@@ -97,5 +101,6 @@ module.exports = {
   initializeDatabase,
   Hunt,
   HuntPoi,
-  HuntSubmission
+  HuntSubmission,
+  Accolade
 };

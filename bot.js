@@ -20,6 +20,7 @@ const { startAllScheduledJobs } = require('./jobs');
 const { pendingLogs } = require('./jobs/logState')
 const { startApi } = require('./api/server');
 const { setClient } = require('./discordClient');
+const { refreshAccoladeEmbeds } = require('./botactions/accolades');
 
 const botType = process.env.BOT_TYPE;
 
@@ -156,6 +157,8 @@ const initializeBot = async () => {
       await syncEventsInDatabase(client);
 
       await sweepVerifiedNicknames(client);
+
+      await refreshAccoladeEmbeds(client);
 
       startAmbientEngine(client);
 

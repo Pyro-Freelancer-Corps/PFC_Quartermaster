@@ -32,6 +32,7 @@ jest.mock('../botactions/eventHandling/memberJoinEvent', () => ({ handleMemberJo
 jest.mock('../botactions/orgTagSync/syncScheduler', () => ({ startOrgTagSyncScheduler: jest.fn() }));
 jest.mock('../jobs', () => ({ startAllScheduledJobs: jest.fn() }));
 jest.mock('../api/server', () => ({ startApi: jest.fn() }));
+jest.mock('../botactions/accolades', () => ({ refreshAccoladeEmbeds: jest.fn() }));
 
 
 let bot;
