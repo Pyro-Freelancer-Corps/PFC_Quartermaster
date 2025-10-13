@@ -5,7 +5,24 @@ function buildAccoladeEmbed(accolade, recipients, role) {
 
   const defaultThumbnail = 'https://i.imgur.com/5sZV5QN.png';
   const roleIconUrl = typeof role?.iconURL === 'function' ? role.iconURL() : null;
-  const thumbnailUrl = roleIconUrl || accolade.thumbnail_url || defaultThumbnail;
+  const accoladeName = accolade?.name || 'Unnamed accolade';
+  const roleLabel = role?.name || role?.id || 'unknown role';
+
+  let thumbnailUrl;
+  if (roleIconUrl) {
+    thumbnailUrl = roleIconUrl;
+    console.log(`dY"? Using role icon thumbnail for accolade ${accoladeName} (${roleLabel}).`);
+  } else if (accolade?.thumbnail_url) {
+    thumbnailUrl = accolade.thumbnail_url;
+    if (role) {
+      console.warn(`�s��,? Role ${roleLabel} lacks icon; using stored thumbnail for accolade ${accoladeName}.`);
+    }
+  } else {
+    const reason = role ? 'role has no icon configured' : 'no role supplied';
+    thumbnailUrl = defaultThumbnail;
+    console.warn(`�s��,? Using default accolade thumbnail for ${accoladeName}: ${reason}.`);
+  }
+
   const footerIcon = accolade.footer_icon_url || 'https://i.imgur.com/5sZV5QN.png';
   const embedColor = accolade.color || 0xD4AF37; // Prestige gold
 
