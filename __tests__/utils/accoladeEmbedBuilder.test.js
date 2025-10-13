@@ -30,4 +30,14 @@ describe('buildAccoladeEmbed', () => {
     expect(data.fields[0].value).toContain('Alice');
     expect(data.fields[0].value).toContain('\u00A0');
   });
+
+  test('uses role icon when available', () => {
+    const role = { iconURL: jest.fn(() => 'https://cdn.discordapp.com/role-icon.png') };
+
+    const embed = buildAccoladeEmbed({ name: 'Iconic', description: 'Desc' }, [], role);
+    const data = embed.toJSON();
+
+    expect(role.iconURL).toHaveBeenCalled();
+    expect(data.thumbnail.url).toBe('https://cdn.discordapp.com/role-icon.png');
+  });
 });

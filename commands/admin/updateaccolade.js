@@ -70,7 +70,7 @@ module.exports = {
           .filter(member => member.roles.cache.has(accolade.role_id))
           .map(member => member);
 
-        const embed = buildAccoladeEmbed(accolade, recipients);
+        const embed = buildAccoladeEmbed(accolade, recipients, role);
         const oldMessage = await channel.messages.fetch(accolade.message_id).catch(() => null);
 
         if (oldMessage) {

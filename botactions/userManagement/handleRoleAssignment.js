@@ -53,7 +53,9 @@ async function handleRoleAssignment(oldMember, newMember, client) {
         .filter(member => member.roles.cache.has(roleId))
         .map(member => member);
 
-      const embed = buildAccoladeEmbed(accolade, recipients);
+      const role = guild.roles.cache.get(roleId) || await guild.roles.fetch(roleId).catch(() => null);
+
+      const embed = buildAccoladeEmbed(accolade, recipients, role);
 
       const existingMessage = await channel.messages.fetch(accolade.message_id).catch(() => null);
 

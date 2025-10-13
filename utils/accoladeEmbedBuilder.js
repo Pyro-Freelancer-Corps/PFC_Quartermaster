@@ -1,9 +1,11 @@
 const { EmbedBuilder } = require('discord.js');
 
-function buildAccoladeEmbed(accolade, recipients) {
+function buildAccoladeEmbed(accolade, recipients, role) {
   const maxFieldLength = 1024;
 
-  const thumbnailUrl = accolade.thumbnail_url || 'https://i.imgur.com/5sZV5QN.png';
+  const defaultThumbnail = 'https://i.imgur.com/5sZV5QN.png';
+  const roleIconUrl = typeof role?.iconURL === 'function' ? role.iconURL() : null;
+  const thumbnailUrl = roleIconUrl || accolade.thumbnail_url || defaultThumbnail;
   const footerIcon = accolade.footer_icon_url || 'https://i.imgur.com/5sZV5QN.png';
   const embedColor = accolade.color || 0xD4AF37; // Prestige gold
 

@@ -74,7 +74,7 @@ module.exports = {
       description
     };
 
-    const embed = buildAccoladeEmbed(tempAccolade, roleMembers);
+    const embed = buildAccoladeEmbed(tempAccolade, roleMembers, role);
     const message = await channel.send({ embeds: [embed] }); // ✅ Embed only, no duplicate text
 
     await Accolade.create({
