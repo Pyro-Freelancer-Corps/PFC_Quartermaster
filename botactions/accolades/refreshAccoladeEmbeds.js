@@ -9,6 +9,8 @@ async function refreshAccoladeEmbeds(client) {
     return;
   }
 
+  console.log(`dY"? Starting accolade embed refresh for guild ${guildId}.`);
+
   const guild = await client.guilds.fetch(guildId).catch(error => {
     console.error('�?O Failed to fetch guild for accolade refresh:', error);
     return null;
@@ -24,8 +26,11 @@ async function refreshAccoladeEmbeds(client) {
   });
 
   if (accolades.length === 0) {
+    console.log('dY"? No accolades found to refresh.');
     return;
   }
+
+  console.log(`dY"? Refreshing ${accolades.length} accolade embed(s).`);
 
   await Promise.allSettled([guild.members.fetch(), guild.roles.fetch()]);
 
