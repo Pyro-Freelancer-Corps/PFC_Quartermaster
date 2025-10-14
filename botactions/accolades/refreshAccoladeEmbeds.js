@@ -26,11 +26,11 @@ async function refreshAccoladeEmbeds(client) {
   });
 
   if (accolades.length === 0) {
-    console.log('🚫? No accolades found to refresh.');
+    console.log('🚫 No accolades found to refresh.');
     return;
   }
 
-  console.log(`🧹? Refreshing ${accolades.length} accolade embed(s).`);
+  console.log(`🧹 Refreshing ${accolades.length} accolade embed(s).`);
 
   await Promise.allSettled([guild.members.fetch(), guild.roles.fetch()]);
 
