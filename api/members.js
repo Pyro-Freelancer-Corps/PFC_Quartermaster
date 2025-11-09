@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getClient } = require('../discordClient');
 const config = require('../config.json');
+const { ensureGuildMembersFetched } = require('../utils/ensureGuildMembersFetched');
 
 async function listMembers(req, res) {
   const client = getClient();
@@ -11,7 +12,7 @@ async function listMembers(req, res) {
     return res.status(500).json({ error: 'Discord client unavailable' });
   }
   try {
-    await guild.members.fetch();
+    await ensureGuildMembersFetched(guild);
     const members = guild.members.cache.map(m => ({
       userId: m.id,
       username: m.user.username,

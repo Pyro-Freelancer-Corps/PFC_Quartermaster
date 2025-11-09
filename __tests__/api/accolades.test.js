@@ -1,10 +1,14 @@
 jest.mock('../../config/database', () => ({ Accolade: { findAll: jest.fn(), findByPk: jest.fn() } }));
 jest.mock('../../discordClient', () => ({ getClient: jest.fn() }));
 jest.mock('../../config.json', () => ({ guildId: 'g1' }), { virtual: true });
+jest.mock('../../utils/ensureGuildMembersFetched', () => ({
+  ensureGuildMembersFetched: jest.fn().mockResolvedValue()
+}));
 
 const { listAccolades, getAccolade } = require('../../api/accolades');
 const { Accolade } = require('../../config/database');
 const { getClient } = require('../../discordClient');
+const { ensureGuildMembersFetched } = require('../../utils/ensureGuildMembersFetched');
 
 function mockRes() {
   return { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -31,13 +35,13 @@ describe('api/accolades listAccolades', () => {
       { id: 'u2', displayName: 'Bob', roles: { cache: [{ id: 'r2' }] } },
       { id: 'u3', displayName: 'Charlie', roles: { cache: [] } }
     ];
-    const guild = { members: { fetch: jest.fn().mockResolvedValue(), cache: makeCollection(members) } };
+    const guild = { members: { cache: makeCollection(members) } };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
 
     await listAccolades(req, res);
 
     expect(Accolade.findAll).toHaveBeenCalled();
-    expect(guild.members.fetch).toHaveBeenCalled();
+    expect(ensureGuildMembersFetched).toHaveBeenCalledWith(guild);
     expect(res.json).toHaveBeenCalledWith({
       accolades: [
         { id: 1, role_id: 'r1', name: 'A', recipients: [{ id: 'u1', displayName: 'Alice' }] },
@@ -51,7 +55,7 @@ describe('api/accolades listAccolades', () => {
     const res = mockRes();
     const err = new Error('fail');
     Accolade.findAll.mockRejectedValue(err);
-    getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => ({ members: { fetch: jest.fn(), cache: makeCollection([]) } })) } } });
+    getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => ({ members: { cache: makeCollection([]) } })) } } });
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     await listAccolades(req, res);
@@ -88,13 +92,13 @@ describe('api/accolades getAccolade', () => {
     const members = [
       { id: 'u1', displayName: 'Alice', roles: { cache: [{ id: 'r1' }] } }
     ];
-    const guild = { members: { fetch: jest.fn().mockResolvedValue(), cache: makeCollection(members) } };
+    const guild = { members: { cache: makeCollection(members) } };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
 
     await getAccolade(req, res);
 
     expect(Accolade.findByPk).toHaveBeenCalledWith('1');
-    expect(guild.members.fetch).toHaveBeenCalled();
+    expect(ensureGuildMembersFetched).toHaveBeenCalledWith(guild);
     expect(res.json).toHaveBeenCalledWith({ accolade: { id: 1, role_id: 'r1', name: 'A', recipients: [{ id: 'u1', displayName: 'Alice' }] } });
   });
 

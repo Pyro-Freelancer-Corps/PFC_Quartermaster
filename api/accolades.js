@@ -3,6 +3,7 @@ const router = express.Router();
 const { Accolade } = require('../config/database');
 const { getClient } = require('../discordClient');
 const config = require('../config.json');
+const { ensureGuildMembersFetched } = require('../utils/ensureGuildMembersFetched');
 
 async function listAccolades(req, res) {
   try {
@@ -13,7 +14,7 @@ async function listAccolades(req, res) {
       console.error('Discord client unavailable for accolades endpoint');
       return res.status(500).json({ error: 'Discord client unavailable' });
     }
-    await guild.members.fetch();
+    await ensureGuildMembersFetched(guild);
     const result = accolades.map(a => {
       const data = a.get ? a.get({ plain: true }) : a;
       const members = guild.members.cache
@@ -39,7 +40,7 @@ async function getAccolade(req, res) {
       console.error('Discord client unavailable for accolades endpoint');
       return res.status(500).json({ error: 'Discord client unavailable' });
     }
-    await guild.members.fetch();
+    await ensureGuildMembersFetched(guild);
     const data = accolade.get ? accolade.get({ plain: true }) : accolade;
     const members = guild.members.cache
       .filter(m => m.roles.cache.some(r => r.id === data.role_id))

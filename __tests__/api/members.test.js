@@ -1,8 +1,12 @@
 jest.mock('../../discordClient', () => ({ getClient: jest.fn() }));
 jest.mock('../../config.json', () => ({ guildId: 'g1' }), { virtual: true });
+jest.mock('../../utils/ensureGuildMembersFetched', () => ({
+  ensureGuildMembersFetched: jest.fn().mockResolvedValue()
+}));
 
 const { listMembers } = require('../../api/members');
 const { getClient } = require('../../discordClient');
+const { ensureGuildMembersFetched } = require('../../utils/ensureGuildMembersFetched');
 
 function mockRes() {
   return { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -21,7 +25,7 @@ describe('api/members listMembers', () => {
       { id: '2', user: { username: 'B' }, displayName: 'B' }
     ];
     const guild = {
-      members: { fetch: jest.fn().mockResolvedValue(), cache: makeCollection(members) }
+      members: { cache: makeCollection(members) }
     };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
     const req = {};
@@ -29,7 +33,7 @@ describe('api/members listMembers', () => {
 
     await listMembers(req, res);
 
-    expect(guild.members.fetch).toHaveBeenCalled();
+    expect(ensureGuildMembersFetched).toHaveBeenCalledWith(guild);
     expect(res.json).toHaveBeenCalledWith({ members: [
       { userId: '1', username: 'A', displayName: 'A' },
       { userId: '2', username: 'B', displayName: 'B' }
@@ -38,12 +42,14 @@ describe('api/members listMembers', () => {
 
   test('handles fetch errors', async () => {
     const guild = {
-      members: { fetch: jest.fn().mockRejectedValue(new Error('fail')), cache: makeCollection([]) }
+      members: { cache: makeCollection([]) }
     };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
     const req = {};
     const res = mockRes();
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    ensureGuildMembersFetched.mockRejectedValueOnce(new Error('fail'));
 
     await listMembers(req, res);
 

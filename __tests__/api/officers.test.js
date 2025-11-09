@@ -1,11 +1,15 @@
 jest.mock('../../discordClient', () => ({ getClient: jest.fn() }));
 jest.mock('../../config/database', () => ({ OfficerBio: { findByPk: jest.fn() } }));
 jest.mock('../../config.json', () => ({ guildId: 'g1' }), { virtual: true });
+jest.mock('../../utils/ensureGuildMembersFetched', () => ({
+  ensureGuildMembersFetched: jest.fn().mockResolvedValue()
+}));
 
 const { listOfficers } = require('../../api/officers');
 const { getClient } = require('../../discordClient');
 const { OfficerBio } = require('../../config/database');
 const { PermissionFlagsBits } = require('discord.js');
+const { ensureGuildMembersFetched } = require('../../utils/ensureGuildMembersFetched');
 
 function mockRes() {
   return { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -29,14 +33,14 @@ describe('api/officers listOfficers', () => {
       { id: '1', user: { username: 'A' }, displayName: 'A', permissions: { has: perm => perm === PermissionFlagsBits.KickMembers }, roles: { cache: makeCollection([role]) } },
       { id: '2', user: { username: 'B' }, displayName: 'B', permissions: { has: () => false }, roles: { cache: makeCollection([]) } }
     ];
-    const guild = { members: { fetch: jest.fn().mockResolvedValue(), cache: makeCollection(members) } };
+    const guild = { members: { cache: makeCollection(members) } };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
     OfficerBio.findByPk.mockResolvedValue({ bio: 'hi' });
     const req = {}; const res = mockRes();
 
     await listOfficers(req, res);
 
-    expect(guild.members.fetch).toHaveBeenCalled();
+    expect(ensureGuildMembersFetched).toHaveBeenCalledWith(guild);
     expect(OfficerBio.findByPk).toHaveBeenCalledWith('1');
     expect(res.json).toHaveBeenCalledWith({ officers: [
       { userId: '1', username: 'A', displayName: 'A', roleName: 'Officer', roleColor: '#fff', bio: 'hi' }
@@ -44,10 +48,12 @@ describe('api/officers listOfficers', () => {
   });
 
   test('handles errors gracefully', async () => {
-    const guild = { members: { fetch: jest.fn().mockRejectedValue(new Error('fail')), cache: makeCollection([]) } };
+    const guild = { members: { cache: makeCollection([]) } };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
     const req = {}; const res = mockRes();
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    ensureGuildMembersFetched.mockRejectedValueOnce(new Error('fail'));
 
     await listOfficers(req, res);
 

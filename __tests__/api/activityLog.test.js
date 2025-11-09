@@ -4,6 +4,9 @@ jest.mock('../../config/database', () => ({
 }));
 jest.mock('../../discordClient', () => ({ getClient: jest.fn() }));
 jest.mock('../../config.json', () => ({ guildId: 'g1' }), { virtual: true });
+jest.mock('../../utils/ensureGuildMembersFetched', () => ({
+  ensureGuildMembersFetched: jest.fn().mockResolvedValue()
+}));
 
 const { Op } = require('sequelize');
 const {
@@ -13,6 +16,7 @@ const {
 } = require('../../api/activityLog');
 const { UsageLog } = require('../../config/database');
 const { getClient } = require('../../discordClient');
+const { ensureGuildMembersFetched } = require('../../utils/ensureGuildMembersFetched');
 
 function mockRes() {
   return { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -34,7 +38,7 @@ describe('api/activityLog searchLogs', () => {
     const logs = [{ channel_id: 'c1', user_id: 'u1', toJSON() { return { channel_id: 'c1', user_id: 'u1' }; } }];
     UsageLog.findAll.mockResolvedValue(logs);
     const guild = {
-      members: { fetch: jest.fn().mockResolvedValue(), cache: makeCollection([{ id: 'u1', user: { username: 'bob' }, displayName: 'Bob' }]) },
+      members: { cache: makeCollection([{ id: 'u1', user: { username: 'bob' }, displayName: 'Bob' }]) },
       channels: { cache: makeCollection([{ id: 'c1', name: 'general' }]) }
     };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
@@ -53,7 +57,7 @@ describe('api/activityLog searchLogs', () => {
       offset: 1,
       order: [['timestamp', 'DESC']]
     });
-    expect(guild.members.fetch).toHaveBeenCalled();
+    expect(ensureGuildMembersFetched).toHaveBeenCalledWith(guild);
     expect(res.json).toHaveBeenCalledWith({ logs: [{ channel_id: 'c1', user_id: 'u1', channelName: 'general', memberName: 'bob', displayName: 'Bob' }] });
   });
 
@@ -62,7 +66,7 @@ describe('api/activityLog searchLogs', () => {
     const res = mockRes();
     UsageLog.findAll.mockRejectedValue(new Error('fail'));
     const guild = {
-      members: { fetch: jest.fn().mockResolvedValue(), cache: makeCollection([]) },
+      members: { cache: makeCollection([]) },
       channels: { cache: makeCollection([]) }
     };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
@@ -98,7 +102,7 @@ describe('api/activityLog searchLogsPost', () => {
     const logs = [{ channel_id: 'c1', user_id: 'u1', toJSON() { return { channel_id: 'c1', user_id: 'u1' }; } }];
     UsageLog.findAll.mockResolvedValue(logs);
     const guild = {
-      members: { fetch: jest.fn().mockResolvedValue(), cache: makeCollection([{ id: 'u1', user: { username: 'bob' }, displayName: 'Bob' }]) },
+      members: { cache: makeCollection([{ id: 'u1', user: { username: 'bob' }, displayName: 'Bob' }]) },
       channels: { cache: makeCollection([{ id: 'c1', name: 'general' }]) }
     };
     getClient.mockReturnValue({ guilds: { cache: { get: jest.fn(() => guild) } } });
@@ -111,7 +115,7 @@ describe('api/activityLog searchLogsPost', () => {
       offset: 0,
       order: [['timestamp', 'DESC']]
     });
-    expect(guild.members.fetch).toHaveBeenCalled();
+    expect(ensureGuildMembersFetched).toHaveBeenCalledWith(guild);
     expect(res.json).toHaveBeenCalledWith({ logs: [{ channel_id: 'c1', user_id: 'u1', channelName: 'general', memberName: 'bob', displayName: 'Bob' }] });
   });
 

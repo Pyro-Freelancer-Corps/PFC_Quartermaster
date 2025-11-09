@@ -4,6 +4,7 @@ const { OfficerBio } = require('../config/database');
 const { getClient } = require('../discordClient');
 const config = require('../config.json');
 const { PermissionFlagsBits } = require('discord.js');
+const { ensureGuildMembersFetched } = require('../utils/ensureGuildMembersFetched');
 
 async function listOfficers(req, res) {
   const client = getClient();
@@ -13,7 +14,7 @@ async function listOfficers(req, res) {
     return res.status(500).json({ error: 'Discord client unavailable' });
   }
   try {
-    await guild.members.fetch();
+    await ensureGuildMembersFetched(guild);
     const officerMembers = guild.members.cache.filter(m => m.permissions.has(PermissionFlagsBits.KickMembers));
 
     const officers = await Promise.all(officerMembers.map(async m => {

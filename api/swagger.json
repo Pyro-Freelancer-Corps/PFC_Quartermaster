@@ -198,7 +198,12 @@
           "200": {
             "description": "Success"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/orgs/{sid}": {
@@ -218,6 +223,11 @@
               "type": "string"
             },
             "description": "The sid"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
           }
         ]
       }

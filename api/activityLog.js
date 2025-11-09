@@ -6,6 +6,7 @@ router.use(express.json());
 const { sequelize, UsageLog } = require('../config/database');
 const { getClient } = require('../discordClient');
 const config = require('../config.json');
+const { ensureGuildMembersFetched } = require('../utils/ensureGuildMembersFetched');
 
 function buildFilters({ type, userId, command, message }) {
   const where = { server_id: config.guildId };
@@ -27,7 +28,7 @@ async function executeSearch(opts, res) {
     return res.status(500).json({ error: 'Discord client unavailable' });
   }
   try {
-    await guild.members.fetch();
+    await ensureGuildMembersFetched(guild);
     const logs = await UsageLog.findAll({
       where,
       limit,

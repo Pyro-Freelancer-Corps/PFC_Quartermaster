@@ -1,4 +1,9 @@
+jest.mock('../../utils/ensureGuildMembersFetched', () => ({
+  ensureGuildMembersFetched: jest.fn().mockResolvedValue()
+}));
+
 const getGuildMembersWithRoles = require('../../utils/getGuildMembersWithRoles');
+const { ensureGuildMembersFetched } = require('../../utils/ensureGuildMembersFetched');
 
 describe('getGuildMembersWithRoles', () => {
   const makeCollection = arr => ({
@@ -16,14 +21,13 @@ describe('getGuildMembersWithRoles', () => {
     const guild = {
       roles: { cache: makeCollection(roles) },
       members: {
-        fetch: jest.fn().mockResolvedValue(),
         cache: makeCollection(membersArr)
       }
     };
 
     const res = await getGuildMembersWithRoles(guild, ['Admin', 'Pilot']);
 
-    expect(guild.members.fetch).toHaveBeenCalled();
+    expect(ensureGuildMembersFetched).toHaveBeenCalledWith(guild);
     expect(res).toEqual([membersArr[0], membersArr[1]]);
   });
 });
