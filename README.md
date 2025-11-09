@@ -114,6 +114,7 @@ project root, or you can export them in your shell before running the bot.
 - `DISCORD_CLIENT_ID` - OAuth2 client ID for Discord login.
 - `DISCORD_CLIENT_SECRET` - OAuth2 client secret for Discord login.
 - `GOOGLE_SERVICE_ACCOUNT_FILE` - Path to your service account JSON key for Google Drive access.
+- `ENABLE_MEMBER_FETCH_DEBUG` - Set to `1` to log every `guild.members.fetch()` call (handy when chasing Discord timeout issues).
 
 ## 🔑 Obtaining an API Token
 

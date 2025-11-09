@@ -4,19 +4,9 @@ const {
   AccoladeRecipient,
   OfficerProfile
 } = require('../../config/database');
+const { fetchGuildMembers, _private: fetchHelpers } = require('../../utils/fetchGuildMembers');
 
-function toArray(collection) {
-  if (!collection) {
-    return [];
-  }
-  if (Array.isArray(collection)) {
-    return collection;
-  }
-  if (typeof collection.values === 'function') {
-    return Array.from(collection.values());
-  }
-  return Object.values(collection);
-}
+const toArray = fetchHelpers.toArray;
 
 async function syncGuildSnapshot(client) {
   const guildId = client?.config?.guildId;
@@ -35,20 +25,24 @@ async function syncGuildSnapshot(client) {
   }
 
   try {
-    await Promise.all([guild.members.fetch(), guild.roles.fetch()]);
+    await guild.roles.fetch();
   } catch (error) {
-    console.error('❌ Failed to hydrate members/roles for snapshot sync:', error);
-    return { success: false, reason: 'hydrateFailed' };
+    console.error('❌ Failed to fetch roles for snapshot sync:', error);
+    return { success: false, reason: 'roleFetchFailed' };
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  const members = toArray(guild.members.cache);
+  const members = await fetchGuildMembers(guild);
+  if (!members.length) {
+    console.warn('⚠️ Guild snapshot aborted: unable to fetch members.');
+    return { success: false, reason: 'memberFetchFailed' };
+  }
 
-  const accoladeResult = await snapshotAccolades(members, now);
-  const officerResult = await snapshotOfficers(members, now);
+  const syncedAt = Math.floor(Date.now() / 1000);
+  const accoladeRows = await snapshotAccolades(members, syncedAt);
+  const officerRows = await snapshotOfficers(members, syncedAt);
 
-  console.log(`✅ Guild snapshot sync complete (accolade rows: ${accoladeResult}, officers: ${officerResult}).`);
-  return { success: true, accoladeRows: accoladeResult, officerRows: officerResult };
+  console.log(`✅ Guild snapshot sync complete (accolade rows: ${accoladeRows}, officers: ${officerRows}).`);
+  return { success: true, accoladeRows, officerRows };
 }
 
 function memberHasRole(member, roleId) {
@@ -89,7 +83,7 @@ async function snapshotAccolades(members, syncedAt) {
 
   try {
     await AccoladeRecipient.destroy({ where: {} });
-    if (rows.length > 0) {
+    if (rows.length) {
       await AccoladeRecipient.bulkCreate(rows);
     }
   } catch (error) {
@@ -125,7 +119,7 @@ async function snapshotOfficers(members, syncedAt) {
 
   try {
     await OfficerProfile.destroy({ where: {} });
-    if (rows.length > 0) {
+    if (rows.length) {
       await OfficerProfile.bulkCreate(rows);
     }
   } catch (error) {

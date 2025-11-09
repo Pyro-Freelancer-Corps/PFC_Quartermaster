@@ -1,5 +1,6 @@
 const { VerifiedUser, OrgTag } = require('../../config/database');
 const { evaluateAndFixNickname } = require('../../utils/evaluateAndFixNickname');
+const { fetchGuildMembers } = require('../../utils/fetchGuildMembers');
 
 /**
  * Sweeps all guild members and enforces nickname formatting.
@@ -22,11 +23,15 @@ async function sweepVerifiedNicknames(client) {
   const verifiedUsersMap = new Map(verifiedUsers.map(u => [u.discordUserId, u]));
   const knownTags = orgTags.filter(o => o.tag).map(o => o.tag.toUpperCase());
 
-  const members = await guild.members.fetch();
+  const members = await fetchGuildMembers(guild);
+  if (!members.length) {
+    console.warn('⚠️ Unable to fetch members for nickname sweep.');
+    return;
+  }
 
   let checked = 0, updated = 0;
 
-  for (const member of members.values()) {
+  for (const member of members) {
     checked++;
     const updatedNickname = await evaluateAndFixNickname(member, {
       verifiedUsersMap,

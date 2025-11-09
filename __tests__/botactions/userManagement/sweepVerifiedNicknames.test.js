@@ -1,9 +1,11 @@
 jest.mock('../../../config/database', () => require('../../../__mocks__/config/database'));
 jest.mock('../../../utils/formatVerifiedNickname');
+jest.mock('../../../utils/fetchGuildMembers', () => ({ fetchGuildMembers: jest.fn() }));
 
 const { sweepVerifiedNicknames } = require('../../../botactions/userManagement/sweepVerifiedNicknames');
 const { VerifiedUser, OrgTag } = require('../../../config/database');
 const { formatVerifiedNickname } = require('../../../utils/formatVerifiedNickname');
+const { fetchGuildMembers } = require('../../../utils/fetchGuildMembers');
 
 describe('sweepVerifiedNicknames', () => {
   let mockClient, mockGuild, mockMembers, logSpy;
@@ -35,11 +37,7 @@ describe('sweepVerifiedNicknames', () => {
     mockMembers.set('user2', member2);
     mockMembers.set('bot1', botMember);
 
-    mockGuild = {
-      members: {
-        fetch: jest.fn().mockResolvedValue(mockMembers),
-      },
-    };
+    mockGuild = { members: {} };
 
     mockClient = {
       guilds: {
@@ -48,6 +46,8 @@ describe('sweepVerifiedNicknames', () => {
         },
       },
     };
+
+    fetchGuildMembers.mockResolvedValue(Array.from(mockMembers.values()));
   });
 
   afterEach(() => {
@@ -125,6 +125,16 @@ describe('sweepVerifiedNicknames', () => {
 
     expect(mockConsoleWarn).toHaveBeenCalledWith('⚠️ Failed to update VerifiedUser#1234:', 'Test error');
     mockConsoleWarn.mockRestore();
+  });
+
+  it('logs a warning when members cannot be fetched', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    fetchGuildMembers.mockResolvedValue([]);
+
+    await sweepVerifiedNicknames(mockClient);
+
+    expect(warnSpy).toHaveBeenCalledWith('⚠️ Unable to fetch members for nickname sweep.');
+    warnSpy.mockRestore();
   });
 
   it('corrects wrong predefined tag for verified user', async () => {

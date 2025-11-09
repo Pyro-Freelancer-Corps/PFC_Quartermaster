@@ -3,9 +3,17 @@ jest.mock('../../../config/database', () => ({
   AccoladeRecipient: { destroy: jest.fn(), bulkCreate: jest.fn() },
   OfficerProfile: { destroy: jest.fn(), bulkCreate: jest.fn() }
 }));
+jest.mock('../../../utils/fetchGuildMembers', () => {
+  const actual = jest.requireActual('../../../utils/fetchGuildMembers');
+  return {
+    fetchGuildMembers: jest.fn(),
+    _private: actual._private
+  };
+});
 
 const { syncGuildSnapshot, _private } = require('../../../botactions/memberSnapshot/syncGuildSnapshot');
 const { Accolade, AccoladeRecipient, OfficerProfile } = require('../../../config/database');
+const { fetchGuildMembers } = require('../../../utils/fetchGuildMembers');
 
 const makeRole = (id, { permissions = { has: () => false }, position = 1, name = 'Role', hexColor = '#fff' } = {}) => ({
   id,
@@ -52,9 +60,12 @@ describe('syncGuildSnapshot', () => {
     ];
 
     guild = {
-      members: { cache: { values: () => members.values() }, fetch: jest.fn().mockResolvedValue() },
+      members: {
+        cache: { size: 0 }
+      },
       roles: { cache: { values: () => [makeRole('r1'), makeRole('r2')].values() }, fetch: jest.fn().mockResolvedValue() }
     };
+    fetchGuildMembers.mockResolvedValue(members);
 
     client = {
       config: { guildId: 'guild1' },
@@ -102,14 +113,13 @@ describe('syncGuildSnapshot', () => {
   });
 
   test('handles hydration failure', async () => {
-    client.guilds.cache = new Map([['guild1', guild]]);
-    guild.members.fetch.mockRejectedValue(new Error('hydrate'));
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    fetchGuildMembers.mockResolvedValue([]);
+    const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const result = await syncGuildSnapshot(client);
 
     expect(result.success).toBe(false);
-    expect(result.reason).toBe('hydrateFailed');
+    expect(result.reason).toBe('memberFetchFailed');
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
@@ -118,7 +128,7 @@ describe('syncGuildSnapshot', () => {
     members = [
       makeMember({ id: '3', roles: [makeRole('r3')], permissionsHas: () => false })
     ];
-    guild.members.cache.values = () => members.values();
+    fetchGuildMembers.mockResolvedValue(members);
 
     const result = await syncGuildSnapshot(client);
 
@@ -128,6 +138,7 @@ describe('syncGuildSnapshot', () => {
 
   test('continues when accolade fetch fails', async () => {
     Accolade.findAll.mockRejectedValueOnce(new Error('db'));
+    fetchGuildMembers.mockResolvedValue(members);
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const result = await syncGuildSnapshot(client);

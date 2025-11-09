@@ -1,5 +1,6 @@
 const { Accolade } = require('../../config/database');
 const { buildAccoladeEmbed } = require('../../utils/accoladeEmbedBuilder');
+const { fetchGuildMembers } = require('../../utils/fetchGuildMembers');
 
 async function refreshAccoladeEmbeds(client) {
   const guildId = client?.config?.guildId;
@@ -32,7 +33,18 @@ async function refreshAccoladeEmbeds(client) {
 
   console.log(`🧹 Refreshing ${accolades.length} accolade embed(s).`);
 
-  await Promise.allSettled([guild.members.fetch(), guild.roles.fetch()]);
+  const members = await fetchGuildMembers(guild);
+  if (!members.length) {
+    console.warn('⚠️ Unable to fetch guild members; skipping accolade refresh.');
+    return;
+  }
+
+  try {
+    await guild.roles.fetch();
+  } catch (error) {
+    console.error('❌ Failed to fetch roles for accolade refresh:', error);
+    return;
+  }
 
   for (const accolade of accolades) {
     try {
@@ -48,9 +60,7 @@ async function refreshAccoladeEmbeds(client) {
         continue;
       }
 
-      const recipients = guild.members.cache
-        .filter(member => member.roles.cache.has(accolade.role_id))
-        .map(member => member);
+      const recipients = members.filter(member => member.roles.cache.has(accolade.role_id));
 
       const embed = buildAccoladeEmbed(accolade, recipients, role);
 

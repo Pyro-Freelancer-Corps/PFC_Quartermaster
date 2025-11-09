@@ -21,6 +21,9 @@ const { pendingLogs } = require('./jobs/logState')
 const { startApi } = require('./api/server');
 const { setClient } = require('./discordClient');
 const { refreshAccoladeEmbeds } = require('./botactions/accolades');
+const { enableMemberFetchDebugging } = require('./utils/instrumentMemberFetch');
+
+enableMemberFetchDebugging();
 
 const botType = process.env.BOT_TYPE;
 

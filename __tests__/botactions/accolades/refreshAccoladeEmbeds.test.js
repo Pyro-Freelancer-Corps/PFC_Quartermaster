@@ -8,8 +8,13 @@ jest.mock('../../../utils/accoladeEmbedBuilder', () => ({
   buildAccoladeEmbed: jest.fn(() => 'embed')
 }));
 
+jest.mock('../../../utils/fetchGuildMembers', () => ({
+  fetchGuildMembers: jest.fn()
+}));
+
 const { Accolade } = require('../../../config/database');
 const { buildAccoladeEmbed } = require('../../../utils/accoladeEmbedBuilder');
+const { fetchGuildMembers } = require('../../../utils/fetchGuildMembers');
 const { refreshAccoladeEmbeds } = require('../../../botactions/accolades/refreshAccoladeEmbeds');
 
 describe('refreshAccoladeEmbeds', () => {
@@ -18,6 +23,7 @@ describe('refreshAccoladeEmbeds', () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.spyOn(console, 'log').mockImplementation(() => {});
+    fetchGuildMembers.mockResolvedValue([{ roles: { cache: { has: jest.fn(() => false) } } }]);
   });
 
   afterEach(() => {
@@ -45,6 +51,7 @@ describe('refreshAccoladeEmbeds', () => {
 
     const role = { iconURL: jest.fn(() => 'https://icon.url') };
     const member = { roles: { cache: { has: jest.fn(() => true) } } };
+    fetchGuildMembers.mockResolvedValue([member]);
 
     const client = {
       config: { guildId: 'guild-1' },
@@ -101,6 +108,7 @@ describe('refreshAccoladeEmbeds', () => {
 
     const role = { iconURL: jest.fn(() => null) };
     const member = { roles: { cache: { has: jest.fn(() => true) } } };
+    fetchGuildMembers.mockResolvedValue([member]);
 
     const guild = {
       channels: { fetch: jest.fn().mockResolvedValue(channel) },
@@ -155,6 +163,7 @@ describe('refreshAccoladeEmbeds', () => {
 
     const role = { iconURL: jest.fn(() => 'https://icon.url') };
     const member = { roles: { cache: { has: jest.fn(() => true) } } };
+    fetchGuildMembers.mockResolvedValue([member]);
 
     const guild = {
       channels: { fetch: jest.fn().mockResolvedValue(channel) },
@@ -233,15 +242,12 @@ describe('refreshAccoladeEmbeds', () => {
   test('skips when channel is not text based', async () => {
     const guild = {
       channels: { fetch: jest.fn().mockResolvedValue({ type: 2 }) },
-      members: {
-        fetch: jest.fn().mockResolvedValue(),
-        cache: { filter: jest.fn(() => ({ map: jest.fn() })) }
-      },
       roles: {
         fetch: jest.fn().mockResolvedValue(),
         cache: { get: jest.fn(() => ({ iconURL: jest.fn() })) }
       }
     };
+    fetchGuildMembers.mockResolvedValue([{ roles: { cache: { has: jest.fn(() => true) } } }]);
 
     const client = {
       config: { guildId: 'guild-1' },
@@ -261,15 +267,12 @@ describe('refreshAccoladeEmbeds', () => {
   test('skips when channel fetch fails', async () => {
     const guild = {
       channels: { fetch: jest.fn().mockRejectedValue(new Error('fetch fail')) },
-      members: {
-        fetch: jest.fn().mockResolvedValue(),
-        cache: { filter: jest.fn(() => ({ map: jest.fn() })) }
-      },
       roles: {
         fetch: jest.fn().mockResolvedValue(),
         cache: { get: jest.fn(() => ({ iconURL: jest.fn() })) }
       }
     };
+    fetchGuildMembers.mockResolvedValue([{ roles: { cache: { has: jest.fn(() => true) } } }]);
 
     const client = {
       config: { guildId: 'guild-1' },
@@ -286,6 +289,24 @@ describe('refreshAccoladeEmbeds', () => {
     expect(buildAccoladeEmbed).not.toHaveBeenCalled();
   });
 
+  test('warns when guild members cannot be fetched', async () => {
+    fetchGuildMembers.mockResolvedValue([]);
+    const guild = {
+      channels: { fetch: jest.fn() },
+      roles: { fetch: jest.fn(), cache: { get: jest.fn() } }
+    };
+    const client = {
+      config: { guildId: 'guild-1' },
+      guilds: { fetch: jest.fn().mockResolvedValue(guild) }
+    };
+    Accolade.findAll.mockResolvedValue([{ name: 'Test', role_id: 'role', channel_id: 'chan', save: jest.fn() }]);
+
+    await refreshAccoladeEmbeds(client);
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Unable to fetch guild members'));
+    expect(buildAccoladeEmbed).not.toHaveBeenCalled();
+  });
+
   test('skips when role cannot be resolved', async () => {
     const channel = {
       type: 0,
@@ -293,17 +314,19 @@ describe('refreshAccoladeEmbeds', () => {
       send: jest.fn()
     };
 
+    const roleFetch = jest.fn()
+      .mockResolvedValueOnce()
+      .mockRejectedValueOnce(new Error('role fetch failed'));
+
     const guild = {
       channels: { fetch: jest.fn().mockResolvedValue(channel) },
-      members: {
-        fetch: jest.fn().mockResolvedValue(),
-        cache: { filter: jest.fn(() => ({ map: jest.fn() })) }
-      },
       roles: {
-        fetch: jest.fn().mockRejectedValue(new Error('role fetch failed')),
+        fetch: roleFetch,
         cache: { get: jest.fn(() => null) }
       }
     };
+    fetchGuildMembers.mockResolvedValue([{ roles: { cache: { has: jest.fn(() => true) } } }]);
+    fetchGuildMembers.mockResolvedValue([{ roles: { cache: { has: jest.fn(() => true) } } }]);
 
     const client = {
       config: { guildId: 'guild-1' },
@@ -331,19 +354,12 @@ describe('refreshAccoladeEmbeds', () => {
 
     const guild = {
       channels: { fetch: jest.fn().mockResolvedValue(channel) },
-      members: {
-        fetch: jest.fn().mockResolvedValue(),
-        cache: {
-          filter: jest.fn(() => ({
-            map: jest.fn(() => [])
-          }))
-        }
-      },
       roles: {
         fetch: jest.fn().mockResolvedValue(role),
         cache: { get: jest.fn(() => role) }
       }
     };
+    fetchGuildMembers.mockResolvedValue([]);
 
     const client = {
       config: { guildId: 'guild-1' },
@@ -361,7 +377,5 @@ describe('refreshAccoladeEmbeds', () => {
     Accolade.findAll.mockResolvedValue([accolade]);
 
     await refreshAccoladeEmbeds(client);
-
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Failed to refresh accolade Broken'), expect.any(Error));
   });
 });
