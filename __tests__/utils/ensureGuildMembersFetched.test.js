@@ -10,14 +10,13 @@ describe('ensureGuildMembersFetched', () => {
   const makeGuild = () => ({
     id: 'g1',
     members: {
-      fetch: jest.fn(),
-      cache: { size: 5 }
+      fetch: jest.fn()
     }
   });
 
   beforeEach(() => {
     clearGuildMemberFetchState();
-    now = 0;
+    now = 1;
     nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
   });
 
@@ -27,35 +26,55 @@ describe('ensureGuildMembersFetched', () => {
 
   test('fetches members once within ttl window', async () => {
     const guild = makeGuild();
-    guild.members.fetch.mockResolvedValue('first');
+    guild.members.fetch.mockResolvedValue();
 
-    await ensureGuildMembersFetched(guild, { ttlMs: 1000 });
+    const first = await ensureGuildMembersFetched(guild, { ttlMs: 1000 });
+    expect(first).toBe(true);
     expect(guild.members.fetch).toHaveBeenCalledTimes(1);
 
     now = 500;
-    await ensureGuildMembersFetched(guild, { ttlMs: 1000 });
+    const second = await ensureGuildMembersFetched(guild, { ttlMs: 1000 });
+    expect(second).toBe(true);
     expect(guild.members.fetch).toHaveBeenCalledTimes(1);
 
     now = 1500;
-    guild.members.fetch.mockResolvedValue('second');
     await ensureGuildMembersFetched(guild, { ttlMs: 1000 });
     expect(guild.members.fetch).toHaveBeenCalledTimes(2);
   });
 
-  test('recovers from GuildMembersTimeout using cached members', async () => {
+  test('returns false after timeout and throttles retries', async () => {
     const guild = makeGuild();
     const timeoutError = Object.assign(new Error('timed out'), { code: 'GuildMembersTimeout' });
-    guild.members.fetch.mockRejectedValueOnce(timeoutError);
+    guild.members.fetch.mockRejectedValue(timeoutError);
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const result = await ensureGuildMembersFetched(guild, { failureCooldownMs: 1000 });
-    expect(result).toBe(guild.members.cache);
+    expect(result).toBe(false);
+    expect(guild.members.fetch).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalled();
 
-    guild.members.fetch.mockClear();
     now = 500;
-    await ensureGuildMembersFetched(guild, { failureCooldownMs: 1000 });
-    expect(guild.members.fetch).not.toHaveBeenCalled();
+    const cached = await ensureGuildMembersFetched(guild, { failureCooldownMs: 1000 });
+    expect(cached).toBe(false);
+    expect(guild.members.fetch).toHaveBeenCalledTimes(1);
+
+    warnSpy.mockRestore();
+  });
+
+  test('retries after cooldown and succeeds', async () => {
+    const guild = makeGuild();
+    const timeoutError = Object.assign(new Error('timed out'), { code: 'GuildMembersTimeout' });
+    guild.members.fetch
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce();
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const first = await ensureGuildMembersFetched(guild, { ttlMs: 1000, failureCooldownMs: 500 });
+    expect(first).toBe(false);
+    now = 600;
+    const second = await ensureGuildMembersFetched(guild, { ttlMs: 1000, failureCooldownMs: 500 });
+    expect(second).toBe(true);
+    expect(guild.members.fetch).toHaveBeenCalledTimes(2);
 
     warnSpy.mockRestore();
   });

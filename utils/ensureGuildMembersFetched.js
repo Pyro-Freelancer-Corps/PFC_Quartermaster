@@ -1,22 +1,27 @@
 const fetchStateByGuild = new Map();
 
-const DEFAULT_TTL_MS = 60 * 1000; // refresh member cache at most once per minute
-const DEFAULT_FAILURE_COOLDOWN_MS = 15 * 1000; // avoid hammering API after a timeout
+const DEFAULT_TTL_MS = 5 * 60 * 1000; // refresh at most every 5 minutes
+const DEFAULT_FAILURE_COOLDOWN_MS = 60 * 1000; // wait 1 minute after a timeout
 
 function getState(guildId) {
-  return fetchStateByGuild.get(guildId) || {};
-}
-
-function setState(guildId, nextState) {
-  fetchStateByGuild.set(guildId, nextState);
+  if (!fetchStateByGuild.has(guildId)) {
+    fetchStateByGuild.set(guildId, {
+      lastSuccess: 0,
+      lastFailure: 0,
+      inFlight: null
+    });
+  }
+  return fetchStateByGuild.get(guildId);
 }
 
 /**
  * Ensures the guild member cache is hydrated while avoiding repeated full fetches.
- * It also degrades gracefully when Discord times out by reusing whatever is cached.
+ * Returns true when members are considered fresh, false when we need to fall back to
+ * whatever is cached locally (e.g. after a timeout).
  *
  * @param {Guild} guild - Discord.js Guild instance.
  * @param {{ ttlMs?: number, failureCooldownMs?: number }} options
+ * @returns {Promise<boolean>}
  */
 async function ensureGuildMembersFetched(guild, options = {}) {
   if (!guild?.id || !guild?.members?.fetch) {
@@ -25,55 +30,43 @@ async function ensureGuildMembersFetched(guild, options = {}) {
 
   const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
   const failureCooldownMs = options.failureCooldownMs ?? DEFAULT_FAILURE_COOLDOWN_MS;
-  const now = Date.now();
   const state = getState(guild.id);
+  const now = Date.now();
 
   if (state.inFlight) {
     return state.inFlight;
   }
 
-  if (typeof state.lastSuccess === 'number' && now - state.lastSuccess < ttlMs) {
-    return state.lastResult;
+  const cacheFresh = state.lastSuccess && now - state.lastSuccess < ttlMs;
+  if (cacheFresh) {
+    return true;
   }
 
-  if (typeof state.lastFailure === 'number' && now - state.lastFailure < failureCooldownMs) {
-    return state.lastResult ?? guild.members.cache;
+  const withinCooldown = state.lastFailure && now - state.lastFailure < failureCooldownMs;
+  if (withinCooldown) {
+    return false;
   }
 
-  const fetchPromise = Promise.resolve(guild.members.fetch()).then(result => {
-    setState(guild.id, {
-      lastSuccess: Date.now(),
-      lastResult: result,
-      lastFailure: null,
-      inFlight: null
-    });
-    return result;
-  }).catch(err => {
-    if (err?.code === 'GuildMembersTimeout') {
-      const fallback = state.lastResult ?? guild.members.cache;
-      if (!state.lastFailure || now - state.lastFailure > failureCooldownMs) {
-        console.warn('�s��,? Guild member fetch timed out for guild', guild.id, '- using cached members');
+  const fetchPromise = guild.members.fetch()
+    .then(() => {
+      state.lastSuccess = Date.now();
+      state.lastFailure = 0;
+      return true;
+    })
+    .catch(error => {
+      state.lastFailure = Date.now();
+      if (error?.code === 'GuildMembersTimeout') {
+        console.warn(`⚠️ Guild member fetch timed out for guild ${guild.id}; serving cached data.`);
+        return false;
       }
-      setState(guild.id, {
-        ...state,
-        lastFailure: Date.now(),
-        lastResult: fallback,
-        inFlight: null
-      });
-      return fallback;
-    }
+      fetchStateByGuild.delete(guild.id);
+      throw error;
+    })
+    .finally(() => {
+      state.inFlight = null;
+    });
 
-    fetchStateByGuild.delete(guild.id);
-    throw err;
-  }).finally(() => {
-    const latest = getState(guild.id);
-    if (latest) {
-      latest.inFlight = null;
-      setState(guild.id, latest);
-    }
-  });
-
-  setState(guild.id, { ...state, inFlight: fetchPromise });
+  state.inFlight = fetchPromise;
   return fetchPromise;
 }
 

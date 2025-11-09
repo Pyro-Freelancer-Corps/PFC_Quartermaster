@@ -36,11 +36,13 @@ const UexVehiclePurchasePrice = require('../models/uexVehiclePurchasePrice')(seq
 const UexVehicleRentalPrice = require('../models/uexVehicleRentalPrice')(sequelize);
 const UexPoi = require('../models/uexPoi')(sequelize);
 const Accolade = require('../models/accolade')(sequelize);
+const AccoladeRecipient = require('../models/accoladeRecipient')(sequelize);
 const OrgTag = require('../models/orgTag')(sequelize);
 const Org = require('../models/org')(sequelize);
 const VerificationCode = require('../models/verificationCode')(sequelize);
 const VerifiedUser = require('../models/verifiedUser')(sequelize);
 const OfficerBio = require('../models/officerBio')(sequelize);
+const OfficerProfile = require('../models/officerProfile')(sequelize);
 const AmbientMessage = require('../models/ambiEntMessage')(sequelize);
 const AmbientChannel = require('../models/ambientChannel')(sequelize);
 const AmbientSetting = require('../models/ambientSetting')(sequelize);
@@ -101,11 +103,13 @@ module.exports = {
     UexVehicleRentalPrice,
     UexPoi,
     Accolade,
+    AccoladeRecipient,
     OrgTag,
     Org,
     VerificationCode,
     VerifiedUser,
     OfficerBio,
+    OfficerProfile,
     AmbientMessage,
     AmbientChannel,
     AmbientSetting,

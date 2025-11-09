@@ -8,6 +8,7 @@
     "pretest": "node scripts/generateSwagger.js",
     "start": "node bot.js",
     "test": "node --no-deprecation -e \"process.stdout.write('\\x1Bc')\" && jest",
+    "snapshot": "node scripts/runGuildSnapshot.js",
     "setup": "node -e \"process.stdout.write('\\x1Bc')\" && npm ci --no-audit && npm test"
   },
   "author": "Kenneth Hart",

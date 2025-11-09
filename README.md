@@ -158,6 +158,16 @@ Run the bot:
 node bot.js
 ```
 
+### Manually refreshing cached guild data
+
+The `/api/accolades` and `/api/officers` endpoints read from cached tables populated by the Discord bot. The snapshot job runs automatically a few seconds after the bot starts, but you can trigger it on demand (for example, right after deploying new code) with:
+
+```bash
+npm run snapshot
+```
+
+This command logs in using your configured bot token, fetches the current guild members/roles once, updates the cache tables, and exits.
+
 For development with auto-reload:
 
 ```bash

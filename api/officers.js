@@ -1,39 +1,36 @@
 const express = require('express');
 const router = express.Router();
-const { OfficerBio } = require('../config/database');
-const { getClient } = require('../discordClient');
-const config = require('../config.json');
-const { PermissionFlagsBits } = require('discord.js');
-const { ensureGuildMembersFetched } = require('../utils/ensureGuildMembersFetched');
+const { OfficerBio, OfficerProfile } = require('../config/database');
 
 async function listOfficers(req, res) {
-  const client = getClient();
-  const guild = client?.guilds?.cache.get(config.guildId);
-  if (!client || !guild) {
-    console.error('Discord client unavailable for officers endpoint');
-    return res.status(500).json({ error: 'Discord client unavailable' });
-  }
   try {
-    await ensureGuildMembersFetched(guild);
-    const officerMembers = guild.members.cache.filter(m => m.permissions.has(PermissionFlagsBits.KickMembers));
+    const profiles = await OfficerProfile.findAll();
+    const officerIds = profiles.map(profile => profile.user_id);
+    const bioRecords = officerIds.length
+      ? await OfficerBio.findAll({ where: { discordUserId: officerIds } })
+      : [];
+    const biosById = bioRecords.reduce((acc, record) => {
+      const key = record.discordUserId || record.discord_user_id;
+      acc[key] = record.bio;
+      return acc;
+    }, {});
 
-    const officers = await Promise.all(officerMembers.map(async m => {
-      const kickRole = m.roles.cache
-        .filter(r => r.permissions.has(PermissionFlagsBits.KickMembers))
-        .sort((a, b) => b.position - a.position)
-        .first();
-      const bio = await OfficerBio.findByPk(m.id);
+    const officers = profiles.map(profile => {
+      const data = profile.get ? profile.get({ plain: true }) : profile;
       return {
-        userId: m.id,
-        username: m.user.username,
-        displayName: m.displayName,
-        roleName: kickRole?.name || null,
-        roleColor: kickRole?.hexColor || null,
-        bio: bio?.bio || null
+        userId: data.user_id,
+        username: data.username,
+        displayName: data.display_name,
+        roleName: data.role_name,
+        roleColor: data.role_color,
+        bio: biosById[data.user_id] || null,
+        syncedAt: data.synced_at
       };
-    }));
+    }).sort((a, b) => (b.syncedAt || 0) - (a.syncedAt || 0) || a.displayName?.localeCompare(b.displayName || '') || 0);
 
-    res.json({ officers });
+    const lastSyncedAt = officers.reduce((max, officer) => Math.max(max, officer.syncedAt || 0), 0) || null;
+
+    res.json({ officers, syncedAt: lastSyncedAt, stale: officers.length === 0 });
   } catch (err) {
     console.error('Failed to fetch officers:', err);
     res.status(500).json({ error: 'Server error' });

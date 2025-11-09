@@ -1,27 +1,32 @@
 const express = require('express');
 const router = express.Router();
-const { Accolade } = require('../config/database');
-const { getClient } = require('../discordClient');
-const config = require('../config.json');
-const { ensureGuildMembersFetched } = require('../utils/ensureGuildMembersFetched');
+const { Accolade, AccoladeRecipient } = require('../config/database');
 
 async function listAccolades(req, res) {
   try {
     const accolades = await Accolade.findAll();
-    const client = getClient();
-    const guild = client?.guilds?.cache.get(config.guildId);
-    if (!client || !guild) {
-      console.error('Discord client unavailable for accolades endpoint');
-      return res.status(500).json({ error: 'Discord client unavailable' });
-    }
-    await ensureGuildMembersFetched(guild);
-    const result = accolades.map(a => {
-      const data = a.get ? a.get({ plain: true }) : a;
-      const members = guild.members.cache
-        .filter(m => m.roles.cache.some(r => r.id === data.role_id))
-        .map(m => ({ id: m.id, displayName: m.displayName }));
-      return { ...data, recipients: members };
+    const accoladeIds = accolades.map(a => a.id);
+    const recipientRows = accoladeIds.length
+      ? await AccoladeRecipient.findAll({ where: { accolade_id: accoladeIds } })
+      : [];
+    const recipientsByAccolade = recipientRows.reduce((acc, row) => {
+      const list = acc[row.accolade_id] || (acc[row.accolade_id] = []);
+      list.push({
+        id: row.user_id,
+        username: row.username,
+        displayName: row.display_name,
+        syncedAt: row.synced_at
+      });
+      return acc;
+    }, {});
+
+    const result = accolades.map(record => {
+      const data = record.get ? record.get({ plain: true }) : record;
+      const recipients = recipientsByAccolade[data.id] || [];
+      const syncedAt = recipients[0]?.syncedAt || null;
+      return { ...data, recipients, syncedAt };
     });
+
     res.json({ accolades: result });
   } catch (err) {
     console.error('Failed to load accolades:', err);
@@ -34,18 +39,19 @@ async function getAccolade(req, res) {
   try {
     const accolade = await Accolade.findByPk(id);
     if (!accolade) return res.status(404).json({ error: 'Not found' });
-    const client = getClient();
-    const guild = client?.guilds?.cache.get(config.guildId);
-    if (!client || !guild) {
-      console.error('Discord client unavailable for accolades endpoint');
-      return res.status(500).json({ error: 'Discord client unavailable' });
-    }
-    await ensureGuildMembersFetched(guild);
+
+    const recipients = await AccoladeRecipient.findAll({ where: { accolade_id: accolade.id } });
+    const formatted = recipients.map(row => ({
+      id: row.user_id,
+      username: row.username,
+      displayName: row.display_name,
+      syncedAt: row.synced_at
+    }));
     const data = accolade.get ? accolade.get({ plain: true }) : accolade;
-    const members = guild.members.cache
-      .filter(m => m.roles.cache.some(r => r.id === data.role_id))
-      .map(m => ({ id: m.id, displayName: m.displayName }));
-    res.json({ accolade: { ...data, recipients: members } });
+
+    res.json({
+      accolade: { ...data, recipients: formatted, syncedAt: formatted[0]?.syncedAt || null }
+    });
   } catch (err) {
     console.error('Failed to load accolade:', err);
     res.status(500).json({ error: 'Server error' });

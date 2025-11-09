@@ -2,10 +2,12 @@ jest.mock('../../jobs/scheduler', () => ({ scheduleDailyApiSync: jest.fn() }));
 jest.mock('../../jobs/flushLogs', () => ({ flushLogs: jest.fn() }));
 jest.mock('../../botactions/scheduling', () => ({ checkEvents: jest.fn() }));
 jest.mock('../../botactions/maintenance/logCleanup', () => ({ deleteOldLogs: jest.fn() }));
+jest.mock('../../jobs/guildSnapshot', () => ({ startGuildSnapshotJob: jest.fn() }));
 const { scheduleDailyApiSync } = require('../../jobs/scheduler');
 const { flushLogs } = require('../../jobs/flushLogs');
 const { checkEvents } = require('../../botactions/scheduling');
 const { deleteOldLogs } = require('../../botactions/maintenance/logCleanup');
+const { startGuildSnapshotJob } = require('../../jobs/guildSnapshot');
 const { startAllScheduledJobs } = require('../../jobs');
 
 describe('startAllScheduledJobs', () => {
@@ -33,6 +35,7 @@ describe('startAllScheduledJobs', () => {
 
     expect(scheduleDailyApiSync).toHaveBeenCalledWith(4, 0);
     expect(intervals.map(i => i.delay)).toEqual([2000, 60000, 86400000]);
+    expect(startGuildSnapshotJob).toHaveBeenCalledWith(client);
 
     intervals.forEach(i => i.fn());
     expect(flushLogs).toHaveBeenCalledWith(client);
