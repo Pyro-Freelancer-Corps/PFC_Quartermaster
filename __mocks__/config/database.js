@@ -38,6 +38,12 @@ const Accolade = {
   findAll: jest.fn()
 };
 
+const SpamDetection = {
+  upsert: jest.fn(),
+  findOne: jest.fn(),
+  findAll: jest.fn()
+};
+
 // Simple mock Sequelize-like instance
 const sequelize = {
   models: {
@@ -81,5 +87,6 @@ module.exports = {
   SiteContent,
   sequelize,
   initializeDatabase,
-  Accolade
+  Accolade,
+  SpamDetection
 };

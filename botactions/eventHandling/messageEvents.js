@@ -1,9 +1,11 @@
-const { UsageLog } = require('../../config/database');
+const { UsageLog, SpamDetection } = require('../../config/database');
 const filter = require('../../messages.json');
 const OpenAI = require('openai');
 const fs = require('fs');
 const path = require('path');
 const { trackChannelActivity } = require('../../botactions/ambient/ambientEngine');
+const { analyzeMessage } = require('../../utils/messageAnalyzer');
+const { handleSpam } = require('../../utils/spamHandler');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -16,6 +18,18 @@ function normalizePrompt(input) {
 module.exports = {
     handleMessageCreate: async function (message, client) {
         if (!message.guild || message.author.bot) return;
+
+        // 🛡️ Spam Detection - Check messages from new members
+        try {
+            const analysis = await analyzeMessage(message);
+            if (analysis.isSpam) {
+                await handleSpam(message, analysis, SpamDetection);
+                return; // Stop processing - message deleted and user banned
+            }
+        } catch (error) {
+            console.error('❌ Error in spam detection:', error);
+            // Continue processing even if spam detection fails
+        }
 
         //This is for the ambientEngine.js
         trackChannelActivity(message);
