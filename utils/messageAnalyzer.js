@@ -154,22 +154,23 @@ async function analyzeMessage(message) {
     });
   }
 
-  // FLAG 3: Spam content patterns
+  // FLAG 3: Spam content patterns (only flag if combined with other indicators)
   const spamMatch = matchesSpamPatterns(content);
   if (spamMatch.matched) {
+    // Mark as high severity, not critical - requires other flags to trigger ban
     flags.push({
       type: 'spam_content',
-      severity: 'critical',
+      severity: 'high',
       detail: `Matched pattern: ${spamMatch.type}`
     });
   }
 
   // Determine if this is spam based on flags
-  const criticalFlags = flags.filter(f => f.severity === 'critical');
   const highFlags = flags.filter(f => f.severity === 'high');
 
-  // Auto-ban criteria: Any critical flag OR 2+ high severity flags
-  const isSpam = criticalFlags.length > 0 || highFlags.length >= 2;
+  // Auto-ban criteria: 2+ high severity flags
+  // This means spam keywords alone won't ban - needs rapid-fire OR duplicates too
+  const isSpam = highFlags.length >= 2;
 
   return {
     isSpam,

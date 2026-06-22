@@ -92,11 +92,11 @@ describe('messageAnalyzer', () => {
       expect(result.flags.some(f => f.type === 'rapid_fire')).toBe(true);
     });
 
-    test('flags spam content patterns', async () => {
+    test('flags spam content patterns but does not auto-ban without other flags', async () => {
       mockMessage.content = 'Free nitro here: discord.gift/test';
       const result = await analyzeMessage(mockMessage);
 
-      expect(result.isSpam).toBe(true);
+      expect(result.isSpam).toBe(false); // Spam keywords alone don't trigger ban
       expect(result.flags.some(f => f.type === 'spam_content')).toBe(true);
     });
 
