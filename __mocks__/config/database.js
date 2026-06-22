@@ -34,25 +34,13 @@ const SiteContent = {
   findOne: jest.fn()
 };
 
-const Hunt = {
-  findAll: jest.fn(),
-  create: jest.fn(),
-  findOne: jest.fn()
-};
-
-const HuntPoi = {
-  findAll: jest.fn(),
-  create: jest.fn()
-};
-
-const HuntSubmission = {
-  findAll: jest.fn(),
-  findByPk: jest.fn(),
-  create: jest.fn(),
-  update: jest.fn()
-};
-
 const Accolade = {
+  findAll: jest.fn()
+};
+
+const SpamDetection = {
+  upsert: jest.fn(),
+  findOne: jest.fn(),
   findAll: jest.fn()
 };
 
@@ -99,8 +87,6 @@ module.exports = {
   SiteContent,
   sequelize,
   initializeDatabase,
-  Hunt,
-  HuntPoi,
-  HuntSubmission,
-  Accolade
+  Accolade,
+  SpamDetection
 };

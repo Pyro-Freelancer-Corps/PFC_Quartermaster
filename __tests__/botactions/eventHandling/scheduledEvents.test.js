@@ -51,37 +51,6 @@ describe('scheduledEvents handlers', () => {
     log.mockRestore();
   });
 
-  test('handleCreateEvent creates hunt when location matches case-insensitively', async () => {
-    const { Hunt } = require('../../../config/database');
-    event.entityMetadata.location = 'sCaVeNgEr HuNt';
-    await events.handleCreateEvent(event);
-    expect(Hunt.create).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'Test',
-      discord_event_id: 'e1'
-    }));
-  });
-
-  test('handleCreateEvent creates hunt when location contains scavenger hunt text', async () => {
-    const { Hunt } = require('../../../config/database');
-    event.entityMetadata.location = 'Scavenger Hunt - Round 1 ';
-    await events.handleCreateEvent(event);
-    expect(Hunt.create).toHaveBeenCalled();
-  });
-
-  test('handleCreateEvent creates hunt when location uses hyphen', async () => {
-    const { Hunt } = require('../../../config/database');
-    event.entityMetadata.location = 'Scavenger-Hunt area';
-    await events.handleCreateEvent(event);
-    expect(Hunt.create).toHaveBeenCalled();
-  });
-
-  test('handleCreateEvent creates hunt when location has no spaces', async () => {
-    const { Hunt } = require('../../../config/database');
-    event.entityMetadata.location = 'ScavengerHunt';
-    await events.handleCreateEvent(event);
-    expect(Hunt.create).toHaveBeenCalled();
-  });
-
   test('handleUpdateEvent deletes when ended', async () => {
     await events.handleUpdateEvent(event, { ...event, status: 3 });
     expect(handler.deleteEventFromDatabase).toHaveBeenCalled();
@@ -93,16 +62,6 @@ describe('scheduledEvents handlers', () => {
     expect(handler.updateEventInDatabase).toHaveBeenCalled();
     expect(log).toHaveBeenCalled();
     log.mockRestore();
-  });
-
-  test('handleUpdateEvent updates hunt when present', async () => {
-    const { Hunt } = require('../../../config/database');
-    const huntInstance = { update: jest.fn() };
-    Hunt.findOne.mockResolvedValue(huntInstance);
-    await events.handleUpdateEvent(event, { ...event, status: 2 }, {});
-    expect(huntInstance.update).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'Test'
-    }));
   });
 
   test('handleDeleteEvent removes event', async () => {
