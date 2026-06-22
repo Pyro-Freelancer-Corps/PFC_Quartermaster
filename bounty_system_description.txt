@@ -1,0 +1,73 @@
+## **🛡️ Spam Detection & Trust System**
+
+Our bot automatically identifies and bans spam bots while protecting legitimate members.
+
+### **📊 Trust Levels**
+
+**🌟 Verified** - Completed `/verify` or has "Pyro Freelancer Corps" role
+→ **2 flags = 1-hour timeout** (warning, not ban)
+
+**✅ Trusted** - 30+ day account, 7+ days in server, 10+ messages
+→ **2 flags = 1-hour timeout** (warning, not ban)
+
+**👤 Member** - 7+ day account OR 24+ hours in server
+→ **2 flags = automatic ban**
+
+**🆕 New** - Fresh accounts
+→ **2 flags = automatic ban**
+
+---
+
+### **🚩 Spam Detection Flags**
+
+**1. Rapid Fire** 🔥 - Sending 3+ messages within 5 seconds
+
+**2. Cross-Channel Duplicate** 📋 - Same message in multiple channels within 30 seconds
+
+**3. Spam Content** ⚠️ - Matches known patterns:
+- Discord scams (discord.gift, free nitro)
+- Phishing (verify account, claim prize)
+- Crypto scams (airdrop, free crypto)
+- Server promotion spam
+- Adult content spam
+
+---
+
+### **⚖️ How It Works**
+
+**Verified/Trusted Users:**
+- 1 flag = No action
+- 2 flags = **1-hour timeout + recent messages deleted (last 5 min)**
+- User gets DM warning
+- Orange alert in mod log
+
+**Member/New Users:**
+- 1 flag = No action
+- 2 flags = **Permanent ban + recent messages deleted (last 5 min)**
+- User gets DM with appeal info
+- Red alert in mod log
+
+**Examples:**
+✅ Verified user posts scam link → 1 flag → No action
+⏰ Verified user rapid-fires scam links → 2 flags → **TIMEOUT**
+🔨 New user rapid-fires scam links → 2 flags → **BANNED**
+
+---
+
+### **❓ FAQ**
+
+**Q: Can legitimate users be banned?**
+A: Very unlikely. Verified/trusted users only get 1-hour timeouts. Only member/new accounts are auto-banned.
+
+**Q: What if someone gets timed out by mistake?**
+A: Timeouts last only 1 hour. Moderators can manually remove it if needed.
+
+**Q: What gets deleted?**
+A: Only messages from the last 5 minutes. Older message history is preserved.
+
+**Q: Does this work on all users?**
+A: Discord bots are automatically skipped. Only analyzes human messages.
+
+---
+
+**Questions?** Contact a developer or admin.
