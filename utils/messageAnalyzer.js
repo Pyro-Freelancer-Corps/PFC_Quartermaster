@@ -164,39 +164,6 @@ async function analyzeMessage(message) {
     });
   }
 
-  // FLAG 4: Link analysis
-  const urls = extractUrls(content);
-  if (urls.length > 0) {
-    for (const url of urls) {
-      // Suspicious URL patterns
-      if (isSuspiciousUrl(url)) {
-        flags.push({
-          type: 'suspicious_link',
-          severity: 'critical',
-          detail: `Suspicious URL: ${url}`
-        });
-      }
-
-      // Non-trusted domain from new account
-      if (!isTrustedDomain(url) && accountAge < 7 * 24 * 60 * 60 * 1000) {
-        flags.push({
-          type: 'new_account_untrusted_link',
-          severity: 'high',
-          detail: `New account (${Math.floor(accountAge / 86400000)} days) posting untrusted link`
-        });
-      }
-    }
-
-    // First message contains link
-    if (messageCount <= 1) {
-      flags.push({
-        type: 'first_message_link',
-        severity: 'medium',
-        detail: 'First message contains link'
-      });
-    }
-  }
-
   // Determine if this is spam based on flags
   const criticalFlags = flags.filter(f => f.severity === 'critical');
   const highFlags = flags.filter(f => f.severity === 'high');

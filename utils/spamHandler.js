@@ -10,13 +10,13 @@ const config = require('../config.json');
  */
 async function getAdminList(guild) {
   try {
-    // Get admin role IDs from config
+    // Get admin role IDs from config (optional)
     const adminRoleIds = config.adminRoleIds || [];
 
-    // Fetch all members with admin roles
+    // Fetch all members with admin roles or Administrator permission
     const members = await guild.members.fetch();
     const admins = members.filter(member =>
-      member.roles.cache.some(role => adminRoleIds.includes(role.id)) ||
+      (adminRoleIds.length > 0 && member.roles.cache.some(role => adminRoleIds.includes(role.id))) ||
       member.permissions.has('Administrator')
     );
 
@@ -138,10 +138,16 @@ async function logSpamDetection(SpamDetection, user, member, messageContent, fla
 async function notifyModerators(guild, user, flags, messageContent) {
   try {
     const modLogChannelId = config.modLogChannelId;
-    if (!modLogChannelId) return;
+    if (!modLogChannelId) {
+      console.log('ℹ️ No mod log channel configured - skipping moderator notification');
+      return;
+    }
 
     const channel = await guild.channels.fetch(modLogChannelId);
-    if (!channel) return;
+    if (!channel) {
+      console.warn('⚠️ Mod log channel not found');
+      return;
+    }
 
     const flagDescriptions = flags.map(f => `• **${f.type}** (${f.severity}): ${f.detail}`).join('\n');
 

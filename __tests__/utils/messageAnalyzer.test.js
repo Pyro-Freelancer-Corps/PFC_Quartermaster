@@ -100,33 +100,6 @@ describe('messageAnalyzer', () => {
       expect(result.flags.some(f => f.type === 'spam_content')).toBe(true);
     });
 
-    test('flags suspicious links', async () => {
-      mockMessage.content = 'Click here https://bit.ly/scam123';
-      const result = await analyzeMessage(mockMessage);
-
-      expect(result.flags.some(f => f.type === 'suspicious_link')).toBe(true);
-    });
-
-    test('flags new account with untrusted link', async () => {
-      mockMessage.content = 'Check this https://suspicious-site.com';
-      const result = await analyzeMessage(mockMessage);
-
-      expect(result.flags.some(f => f.type === 'new_account_untrusted_link')).toBe(true);
-    });
-
-    test('does not flag trusted domains', async () => {
-      mockMessage.content = 'Check out this video https://youtube.com/watch?v=test';
-      const result = await analyzeMessage(mockMessage);
-
-      expect(result.flags.some(f => f.type === 'new_account_untrusted_link')).toBe(false);
-    });
-
-    test('flags first message with link', async () => {
-      mockMessage.content = 'Hello https://example.com';
-      const result = await analyzeMessage(mockMessage);
-
-      expect(result.flags.some(f => f.type === 'first_message_link')).toBe(true);
-    });
 
     test('skips bot messages', async () => {
       mockMember.user.bot = true;
@@ -137,12 +110,12 @@ describe('messageAnalyzer', () => {
     });
 
     test('detects spam with multiple high severity flags', async () => {
-      // Rapid fire
+      // Rapid fire messages
       await analyzeMessage({ ...mockMessage, content: 'Msg 1' });
       await analyzeMessage({ ...mockMessage, content: 'Msg 2' });
 
-      // Third message with suspicious link (needs http/https for URL extraction)
-      mockMessage.content = 'Click here https://bit.ly/spam';
+      // Third message with spam content
+      mockMessage.content = 'Free Discord nitro here!';
       const result = await analyzeMessage(mockMessage);
 
       expect(result.isSpam).toBe(true);
