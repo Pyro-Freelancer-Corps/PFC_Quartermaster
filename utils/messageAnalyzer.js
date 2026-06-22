@@ -1,4 +1,6 @@
 const { SPAM_PATTERNS, TRUSTED_DOMAINS, SUSPICIOUS_URL_PATTERNS } = require('./spamPatterns');
+const { VerifiedUser } = require('../config/database');
+const config = require('../config.json');
 
 // In-memory tracking for message patterns (resets on bot restart)
 const userMessages = new Map(); // userId -> [{content, timestamp, channelId}]
@@ -115,6 +117,74 @@ function isDuplicateMessage(userId, content) {
 }
 
 /**
+ * Calculate trust level for a user
+ * @param {GuildMember} member - Discord guild member
+ * @returns {Promise<string>} Trust level: 'new', 'member', 'trusted', or 'verified'
+ */
+async function getTrustLevel(member) {
+  const accountAge = Date.now() - member.user.createdTimestamp;
+  const joinAge = Date.now() - member.joinedTimestamp;
+  const messageCount = (userMessages.get(member.id) || []).length;
+
+  // Get config with defaults
+  const spamConfig = config.spamDetection || {};
+  const trustedRoles = spamConfig.trustedRoles || ['Pyro Freelancer Corps'];
+  const thresholds = spamConfig.thresholds || {};
+
+  // Trusted user thresholds (defaults: 30 days account, 7 days in server, 10 messages)
+  const trustedThreshold = thresholds.trusted || {};
+  const trustedAccountAgeDays = trustedThreshold.accountAgeDays || 30;
+  const trustedJoinAgeDays = trustedThreshold.joinAgeDays || 7;
+  const trustedMessageCount = trustedThreshold.messageCount || 10;
+
+  // Member thresholds (defaults: 7 days account OR 24 hours in server)
+  const memberThreshold = thresholds.member || {};
+  const memberAccountAgeDays = memberThreshold.accountAgeDays || 7;
+  const memberJoinAgeHours = memberThreshold.joinAgeHours || 24;
+
+  // Check if user has completed /verify command
+  try {
+    const verifiedUser = await VerifiedUser.findOne({
+      where: { discordUserId: member.id }
+    });
+
+    if (verifiedUser) {
+      return 'verified';
+    }
+  } catch (error) {
+    console.warn('⚠️ Error checking VerifiedUser table:', error.message);
+    // Continue with role-based check as fallback
+  }
+
+  // Fallback: Check for trusted roles from config
+  const hasVerifiedRole = member.roles?.cache?.some(role =>
+    trustedRoles.some(trustedRole =>
+      role.name.toLowerCase().includes(trustedRole.toLowerCase())
+    )
+  ) || false;
+
+  if (hasVerifiedRole) {
+    return 'verified';
+  }
+
+  // Trusted: Based on configured thresholds
+  if (accountAge > trustedAccountAgeDays * 24 * 60 * 60 * 1000 &&
+      joinAge > trustedJoinAgeDays * 24 * 60 * 60 * 1000 &&
+      messageCount >= trustedMessageCount) {
+    return 'trusted';
+  }
+
+  // Member: Based on configured thresholds
+  if (accountAge > memberAccountAgeDays * 24 * 60 * 60 * 1000 ||
+      joinAge > memberJoinAgeHours * 60 * 60 * 1000) {
+    return 'member';
+  }
+
+  // New: Everyone else
+  return 'new';
+}
+
+/**
  * Analyze a message for spam indicators
  * @param {Message} message - Discord message object
  * @returns {Object} Analysis result with flags
@@ -131,6 +201,7 @@ async function analyzeMessage(message) {
   const accountAge = Date.now() - member.user.createdTimestamp;
   const joinAge = Date.now() - member.joinedTimestamp;
   const messageCount = (userMessages.get(member.id) || []).length;
+  const trustLevel = await getTrustLevel(member);
 
   // Track this message
   trackMessage(member.id, content, message.channel.id);
@@ -165,19 +236,41 @@ async function analyzeMessage(message) {
     });
   }
 
-  // Determine if this is spam based on flags
+  // Determine if this is spam based on flags and trust level
   const highFlags = flags.filter(f => f.severity === 'high');
 
-  // Auto-ban criteria: 2+ high severity flags
-  // This means spam keywords alone won't ban - needs rapid-fire OR duplicates too
-  const isSpam = highFlags.length >= 2;
+  // Trust-based thresholds:
+  // - verified: Requires 2 flags → timeout (warning, not ban)
+  // - trusted: Requires 2 flags → timeout (warning, not ban)
+  // - member: Requires 2 flags → ban
+  // - new: Requires 2 flags → ban
+  let action = 'none';
+  let requiredFlags = 2;
+
+  if (trustLevel === 'verified' || trustLevel === 'trusted') {
+    requiredFlags = 2;
+    if (highFlags.length >= 2) {
+      action = 'timeout';
+    }
+  } else {
+    // member or new
+    requiredFlags = 2;
+    if (highFlags.length >= 2) {
+      action = 'ban';
+    }
+  }
+
+  const isSpam = action !== 'none';
 
   return {
     isSpam,
+    action,
     flags,
     accountAge,
     joinAge,
-    messageCount
+    messageCount,
+    trustLevel,
+    requiredFlags
   };
 }
 
@@ -194,5 +287,6 @@ module.exports = {
   clearUserTracking,
   extractUrls,
   matchesSpamPatterns,
-  getRecentMessages
+  getRecentMessages,
+  getTrustLevel
 };
