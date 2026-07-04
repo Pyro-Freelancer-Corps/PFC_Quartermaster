@@ -30,7 +30,7 @@ npx jest __tests__/path/to/test.test.js
 
 | Directory | Purpose |
 |-----------|---------|
-| `/commands/` | Slash command modules organized by category (admin/, fun/, tools/, user/, hunt/) |
+| `/commands/` | Slash command modules organized by category (admin/, fun/, tools/, user/) |
 | `/botactions/` | Event handlers and bot logic modules |
 | `/botactions/eventHandling/` | Discord event handlers (interactions, messages, reactions, voice, moderation) |
 | `/botactions/scheduling/` | Scheduled announcement and reminder engines |
@@ -45,7 +45,7 @@ Commands use discord.js SlashCommandBuilder. Each command file exports:
 - `data`: SlashCommandBuilder definition
 - `execute(interaction, client)`: Command handler
 
-Commands are auto-loaded recursively from `/commands/`. If a directory has a matching parent `.js` file (e.g., `hunt.js` for `hunt/`), only the parent file is loaded.
+Commands are auto-loaded recursively from `/commands/`. If a directory has a matching parent `.js` file (e.g., `ambient.js` for `ambient/`), only the parent file is loaded.
 
 ### Event Handling Pattern
 Events flow through [botactions/eventHandling.js](botactions/eventHandling.js) which re-exports handlers from subdirectories:

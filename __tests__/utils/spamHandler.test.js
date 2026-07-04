@@ -134,7 +134,9 @@ describe('spamHandler', () => {
       flags: [
         { type: 'spam_content', severity: 'critical', detail: 'Discord scam' },
         { type: 'rapid_fire', severity: 'high', detail: '3 messages in 5 seconds' }
-      ]
+      ],
+      trustLevel: 'untrusted',
+      action: 'ban'
     };
 
     test.skip('deletes message, bans user, and logs to database', async () => {
