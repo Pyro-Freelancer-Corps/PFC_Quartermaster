@@ -100,7 +100,8 @@ const publicRoutes = {
   '/api/login': ['post'],
   '/api/officers': ['get'],
   '/api/sc-changelog': ['get'],
-  '/api/sc-changelog/versions': ['get']
+  '/api/sc-changelog/versions': ['get'],
+  '/api/sc-changelog/known-versions': ['get']
 };
 
 for (const [pathKey, methodsObj] of Object.entries(spec.paths)) {

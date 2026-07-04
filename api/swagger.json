@@ -259,12 +259,7 @@
           "200": {
             "description": "Success"
           }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
+        }
       }
     },
     "/api/sc-changelog": {
