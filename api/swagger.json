@@ -252,6 +252,16 @@
         }
       }
     },
+    "/api/sc-changelog/known-versions": {
+      "get": {
+        "summary": "GET /api/sc-changelog/known-versions",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/sc-changelog": {
       "get": {
         "summary": "GET /api/sc-changelog",
