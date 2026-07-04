@@ -242,6 +242,26 @@
         }
       }
     },
+    "/api/sc-changelog/versions": {
+      "get": {
+        "summary": "GET /api/sc-changelog/versions",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/sc-changelog": {
+      "get": {
+        "summary": "GET /api/sc-changelog",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/profile/{userId}": {
       "get": {
         "summary": "GET /api/profile/{userId}",
