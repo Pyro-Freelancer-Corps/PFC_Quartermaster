@@ -7,6 +7,8 @@
 #### ✅ Existing Coverage
 
 * `messageCreate` logging to DB via `UsageLog.create`
+* Message deletions logged via `handleMessageDelete` (user ID, message ID, content, channel ID, server ID, timestamp)
+* Message edits logged via `handleMessageUpdate` (new content only — old content is not diffed/stored)
 * AI prompt handling + OpenAI completions tracked
 * Role-based and regex-based action detection
 * Reaction adds/removals logged in `botactions/eventHandling/reactionEvents.js`
@@ -18,15 +20,9 @@
 
 #### 🆕 Logging Requirements
 
-##### 🗑️ Message Deletion
-
-* Track all message deletions (not just bot-triggered).
-* Store: user ID, message ID, content, channel ID, server ID, and timestamp.
-
 ##### ✍️ Message Edits
 
-* Log any message edits.
-* Store: old and new content, user ID, message ID, channel ID, server ID, and timestamp.
+* Store old content alongside new content on edit (currently only new content is captured).
 
 ##### ➕ Other Event Types (Future Consideration)
 

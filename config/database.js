@@ -48,6 +48,7 @@ const AmbientChannel = require('../models/ambientChannel')(sequelize);
 const AmbientSetting = require('../models/ambientSetting')(sequelize);
 const SiteContent = require('../models/siteContent')(sequelize);
 const SpamDetection = require('../models/spamDetection')(sequelize);
+const ScChangelogEntry = require('../models/scChangelogEntry')(sequelize);
 
 Object.values(sequelize.models).forEach(model => {
     if (typeof model.associate === 'function') {
@@ -112,5 +113,6 @@ module.exports = {
     AmbientChannel,
     AmbientSetting,
     SiteContent,
-    SpamDetection
+    SpamDetection,
+    ScChangelogEntry
 };

@@ -67,10 +67,4 @@ This document outlines the work required to make the bot operate across multiple
   - Query `AmbientChannel` and `AmbientSetting` by guild.
   - Store per-guild activity state so ambient messages remain isolated to each server.
 
-## 12. Server-Specific Rules Tables
-- **Current**: `updaterules.js` reads from tables `PFC_RULES` and `PFC_BOT_RULES_EMBED` and embeds PFC-branded text in the rules message【F:botactions/updaterules.js†L28-L66】.
-- **Needed**:
-  - Use generic table names or include the guild ID as part of the schema.
-  - Replace hard-coded PFC text with values from configuration.
-
 By addressing these areas, the bot will be able to function fully when invited to any server, instead of being restricted to a single guild.

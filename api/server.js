@@ -12,6 +12,7 @@ const { router: membersRouter } = require('./members');
 const { router: officersRouter } = require('./officers');
 const { router: orgsRouter } = require('./orgs');
 const { router: commandsRouter } = require('./commands');
+const { router: scChangelogRouter } = require('./scChangelog');
 const { authMiddleware } = require('./auth');
 
 function createApp() {
@@ -27,6 +28,7 @@ function createApp() {
   app.use('/api/events', eventsRouter);
   app.use('/api/orgs', orgsRouter);
   app.use('/api/officers', officersRouter);
+  app.use('/api/sc-changelog', scChangelogRouter);
   app.get('/api/data', async (req, res) => {
     res.json({ success: true, message: 'API is working' });
   });

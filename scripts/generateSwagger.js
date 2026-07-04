@@ -98,7 +98,9 @@ const publicRoutes = {
   '/api/accolades': ['get'],
   '/api/accolades/{id}': ['get'],
   '/api/login': ['post'],
-  '/api/officers': ['get']
+  '/api/officers': ['get'],
+  '/api/sc-changelog': ['get'],
+  '/api/sc-changelog/versions': ['get']
 };
 
 for (const [pathKey, methodsObj] of Object.entries(spec.paths)) {
