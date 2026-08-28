@@ -8,6 +8,7 @@ function mapRow(r) {
     category: r.category,
     recordRef: r.recordRef,
     recordName: r.recordName,
+    recordDisplayName: r.recordDisplayName,
     recordType: r.recordType,
     fieldKey: r.fieldKey,
     label: r.label,
@@ -17,13 +18,14 @@ function mapRow(r) {
   };
 }
 
-// Version labels are always `${branch}_${YYYYMMDD}` (see extract.py's
-// version_folder_name()). Sort by the trailing 8-digit date, never the raw
-// label string — e.g. "4.10.0" sorts before "4.9.0" alphabetically, but
-// dates sort correctly as plain fixed-width strings.
-function extractDateKey(versionLabel) {
-  const match = /_(\d{8})$/.exec(versionLabel || '');
-  return match ? match[1] : null;
+// Version labels are always `${branch}_${changelist}` (see extract.py's
+// version_folder_name()) -- the changelist is a P4 changelist number that
+// always increases over time, so sorting by it numerically (never the raw
+// label string, e.g. "4.10.0" sorts before "4.9.0" alphabetically) gives
+// true chronological order regardless of branch naming.
+function extractBuildKey(versionLabel) {
+  const match = /_(\d+)$/.exec(versionLabel || '');
+  return match ? Number(match[1]) : null;
 }
 
 // Every version label that's ever appeared on either side of a diff,
@@ -41,8 +43,8 @@ async function getOrderedVersions() {
   ]);
 
   return [...labels]
-    .filter(label => extractDateKey(label) !== null)
-    .sort((a, b) => extractDateKey(a).localeCompare(extractDateKey(b)));
+    .filter(label => extractBuildKey(label) !== null)
+    .sort((a, b) => extractBuildKey(a) - extractBuildKey(b));
 }
 
 // Ordered list of every version label from `from` to `to` inclusive

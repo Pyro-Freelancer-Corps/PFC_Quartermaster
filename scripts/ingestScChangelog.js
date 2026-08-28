@@ -44,6 +44,7 @@ async function ingestScChangelog(filePath) {
       category: entry.category,
       recordRef: entry.record_ref,
       recordName: entry.record_name,
+      recordDisplayName: entry.record_display_name || null,
       recordType: entry.record_type,
       fieldKey: entry.field_key,
       label: entry.label,

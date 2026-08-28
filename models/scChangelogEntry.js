@@ -28,6 +28,14 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    // Real player-facing name resolved from the game's localization table
+    // (e.g. "Drake Cutlass Black"), where the game actually has one assigned
+    // — many records only have an unassigned-localization placeholder, so
+    // this is null for those rather than falling back to recordName.
+    recordDisplayName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     recordType: {
       type: DataTypes.STRING,
       allowNull: true,
