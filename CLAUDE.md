@@ -75,17 +75,18 @@ Events flow through [botactions/eventHandling.js](botactions/eventHandling.js) w
 
 ### Voice transcription model (`/listen` command)
 
-`/listen start` transcribes speech fully locally via `sherpa-onnx-node` — no audio or text is ever sent to a third-party API. The model weights are not committed to the repo and must be downloaded once per deployment into `STT_MODEL_DIR` (defaults to `models/stt/`, gitignored):
+`/listen start` transcribes speech fully locally via `sherpa-onnx-node` — no audio or text is ever sent to a third-party API. The model weights (~74MB: `encoder.onnx`, `decoder.onnx`, `joiner.onnx`, `tokens.txt`) are committed directly into `models/stt/` so the bot works immediately after a fresh `git clone`/`git pull` deploy, with no separate download step — this matters on hosts like PebbleHost where deploys are just a git checkout and there's no asset-provisioning step to hook a download into.
+
+`STT_MODEL_DIR` (defaults to `models/stt/`) can still override the path if you want to point at a different model on a given host.
+
+If these files are ever regenerated or replaced, they must come from a non-streaming ("offline") transducer model — a streaming model loaded into `OfflineRecognizer` builds a malformed input feed and crashes the process natively (no catchable JS error) on `decode()`. Don't swap in a model whose repo name contains "streaming" without also switching to `OnlineRecognizer` and rewriting the decode loop. The current model is `sherpa-onnx-zipformer-gigaspeech-2023-12-12` (int8), originally from:
 
 ```bash
-mkdir -p models/stt
 curl -L -o models/stt/encoder.onnx https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-gigaspeech-2023-12-12/resolve/main/encoder-epoch-30-avg-1.int8.onnx
 curl -L -o models/stt/decoder.onnx https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-gigaspeech-2023-12-12/resolve/main/decoder-epoch-30-avg-1.int8.onnx
 curl -L -o models/stt/joiner.onnx https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-gigaspeech-2023-12-12/resolve/main/joiner-epoch-30-avg-1.int8.onnx
 curl -L -o models/stt/tokens.txt https://huggingface.co/csukuangfj/sherpa-onnx-zipformer-gigaspeech-2023-12-12/resolve/main/tokens.txt
 ```
-
-This must be a non-streaming ("offline") transducer model — a streaming model loaded into `OfflineRecognizer` builds a malformed input feed and crashes the process natively (no catchable JS error) on `decode()`. Don't swap in a model whose repo name contains "streaming" without also switching to `OnlineRecognizer` and rewriting the decode loop.
 
 If these files are missing, `/listen start` still joins the voice channel but logs an error and skips transcription instead of crashing.
 
