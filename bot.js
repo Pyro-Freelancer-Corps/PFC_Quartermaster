@@ -22,6 +22,7 @@ const { startApi } = require('./api/server');
 const { setClient } = require('./discordClient');
 const { refreshAccoladeEmbeds } = require('./botactions/accolades');
 const { enableMemberFetchDebugging } = require('./utils/instrumentMemberFetch');
+const { endAllOpenSessionsForShutdown } = require('./botactions/voice/voiceSessionManager');
 
 enableMemberFetchDebugging();
 
@@ -82,7 +83,9 @@ deleteOldLogs(logDir, 7);
 process.on('exit', () => logStream.end());
 process.on('SIGINT', () => {
   console.log('🛑 Caught SIGINT, shutting down cleanly...');
-  logStream.end(() => process.exit());
+  endAllOpenSessionsForShutdown()
+    .catch((err) => console.error('❌ Failed to close open listen sessions:', err))
+    .finally(() => logStream.end(() => process.exit()));
 });
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
