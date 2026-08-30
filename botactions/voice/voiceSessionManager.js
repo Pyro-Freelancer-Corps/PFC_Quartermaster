@@ -124,6 +124,30 @@ async function resolveDisplayName(guild, userId) {
   }
 }
 
+const DISCORD_MESSAGE_LIMIT = 2000;
+const CONTINUATION_PREFIX = '(cont.) ';
+
+// Splits a long utterance into multiple Discord messages so it's never
+// silently dropped for exceeding the 2000-character message limit.
+function chunkForDiscordMessage(prefix, text, limit = DISCORD_MESSAGE_LIMIT) {
+  if (prefix.length + text.length <= limit) {
+    return [`${prefix}${text}`];
+  }
+
+  const chunks = [];
+  let remaining = text;
+  let currentPrefix = prefix;
+
+  while (remaining.length > 0) {
+    const available = limit - currentPrefix.length;
+    chunks.push(currentPrefix + remaining.slice(0, available));
+    remaining = remaining.slice(available);
+    currentPrefix = CONTINUATION_PREFIX;
+  }
+
+  return chunks;
+}
+
 function captureUtterance(session, userId) {
   if (session.activeSubscriptions.get(userId)) return;
   session.activeSubscriptions.set(userId, true);
@@ -145,14 +169,22 @@ function captureUtterance(session, userId) {
     const durationMs = pcmDurationMs(pcmBuffer.length);
     if (durationMs < MIN_UTTERANCE_MS) return;
 
+    let text;
     try {
-      const text = await transcribeUtterance(pcmBuffer);
-      if (!text) return;
+      text = await transcribeUtterance(pcmBuffer);
+    } catch (error) {
+      console.error('❌ Failed to transcribe voice utterance:', error);
+      return;
+    }
+    if (!text) return;
 
-      const displayName = await resolveDisplayName(session.guild, userId);
+    const displayName = await resolveDisplayName(session.guild, userId);
+    session.utteranceSeq += 1;
 
-      session.utteranceSeq += 1;
-      await session.textChannel.send(`**${displayName}:** ${text}`);
+    // Persist first so the utterance is never lost from the final transcript
+    // even if posting it live fails (e.g. a long monologue exceeding Discord's
+    // 2000-character message limit).
+    try {
       await ListenUtterance.create({
         session_id: session.dbSessionId,
         user_id: userId,
@@ -163,7 +195,15 @@ function captureUtterance(session, userId) {
         duration_ms: Math.round(durationMs)
       });
     } catch (error) {
-      console.error('❌ Failed to transcribe voice utterance:', error);
+      console.error('❌ Failed to persist transcribed utterance:', error);
+    }
+
+    try {
+      for (const message of chunkForDiscordMessage(`**${displayName}:** `, text)) {
+        await session.textChannel.send(message);
+      }
+    } catch (error) {
+      console.error('❌ Failed to post live transcript utterance:', error);
     }
   });
 
@@ -285,6 +325,7 @@ module.exports = {
   endAllOpenSessionsForShutdown,
   buildSessionTranscript,
   captureUtterance,
+  chunkForDiscordMessage,
   downsampleTo16kMono,
   pcmDurationMs,
   transcribeUtterance,

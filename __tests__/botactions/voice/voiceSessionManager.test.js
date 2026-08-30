@@ -137,6 +137,24 @@ describe('getRecognizer / transcribeUtterance', () => {
   });
 });
 
+describe('chunkForDiscordMessage', () => {
+  it('returns a single message when under the limit', () => {
+    const chunks = voiceSessionManager.chunkForDiscordMessage('**Alice:** ', 'hello there');
+    expect(chunks).toEqual(['**Alice:** hello there']);
+  });
+
+  it('splits text exceeding the limit into multiple messages, each within the limit', () => {
+    const longText = 'a'.repeat(4500);
+    const chunks = voiceSessionManager.chunkForDiscordMessage('**Alice:** ', longText, 2000);
+
+    expect(chunks.length).toBeGreaterThan(1);
+    chunks.forEach((chunk) => expect(chunk.length).toBeLessThanOrEqual(2000));
+    // reassembling the raw text (stripping prefixes) should reproduce the original content
+    const rejoined = chunks.map((c, i) => (i === 0 ? c.slice('**Alice:** '.length) : c.slice('(cont.) '.length))).join('');
+    expect(rejoined).toBe(longText);
+  });
+});
+
 describe('captureUtterance', () => {
   function makeSession() {
     return {
@@ -209,6 +227,48 @@ describe('captureUtterance', () => {
     expect(session.textChannel.send).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
+  });
+
+  it('persists the utterance even when posting it live fails (e.g. over Discord\'s message limit)', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const session = makeSession();
+    session.textChannel.send.mockRejectedValue(new Error('Invalid Form Body: content too long'));
+    const decoder = wireDecoder(session, 'user1');
+
+    decoder.emit('data', Buffer.alloc(120000));
+    decoder.emit('end');
+    await flush();
+
+    expect(ListenUtterance.create).toHaveBeenCalledWith(expect.objectContaining({
+      content: 'Hello world',
+      sequence: 1,
+    }));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to post live transcript utterance'),
+      expect.any(Error),
+    );
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('splits an utterance longer than the Discord message limit into multiple messages', async () => {
+    const longText = 'word '.repeat(500).trim(); // well over 2000 characters
+    mockOfflineRecognizer.mockImplementation(() => ({
+      createStream: jest.fn(() => ({ acceptWaveform: jest.fn() })),
+      decode: jest.fn(),
+      getResult: jest.fn(() => ({ text: longText })),
+    }));
+    const session = makeSession();
+    const decoder = wireDecoder(session, 'user1');
+
+    decoder.emit('data', Buffer.alloc(120000));
+    decoder.emit('end');
+    await flush();
+
+    expect(session.textChannel.send.mock.calls.length).toBeGreaterThan(1);
+    session.textChannel.send.mock.calls.forEach(([message]) => {
+      expect(message.length).toBeLessThanOrEqual(2000);
+    });
+    expect(ListenUtterance.create).toHaveBeenCalledWith(expect.objectContaining({ content: longText }));
   });
 
   it('does not double-subscribe a user already being captured', () => {
