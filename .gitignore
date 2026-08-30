@@ -17,6 +17,3 @@ bot.log
 logs/
 google-service-account.json
 googleCredentials.json
-
-# Downloaded local speech-to-text model weights (see CLAUDE.md)
-models/stt/
