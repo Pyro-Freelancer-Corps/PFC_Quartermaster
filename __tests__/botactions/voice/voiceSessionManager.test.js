@@ -21,8 +21,10 @@ jest.mock('fs', () => ({
 }));
 
 const mockOfflineRecognizer = jest.fn();
+const mockOfflinePunctuation = jest.fn();
 jest.mock('sherpa-onnx-node', () => ({
   OfflineRecognizer: mockOfflineRecognizer,
+  OfflinePunctuation: mockOfflinePunctuation,
 }));
 
 jest.mock('../../../config/database', () => ({
@@ -49,7 +51,10 @@ function makeConnection() {
 beforeEach(() => {
   jest.clearAllMocks();
   voiceSessionManager.__resetRecognizerForTests();
+  voiceSessionManager.__resetPunctuatorForTests();
   fs.existsSync.mockReturnValue(true);
+  // Identity punctuator by default: tests opt in to real punctuation behavior explicitly.
+  mockOfflinePunctuation.mockImplementation(() => ({ addPunct: jest.fn((text) => text) }));
 });
 
 describe('downsampleTo16kMono', () => {
@@ -102,14 +107,14 @@ describe('getRecognizer / transcribeUtterance', () => {
     expect(mockOfflineRecognizer).toHaveBeenCalledTimes(1);
   });
 
-  it('downsamples, decodes, and returns trimmed text', async () => {
+  it('downsamples, decodes, and returns trimmed, sentence-cased text', async () => {
     fakeRecognizer.getResult.mockReturnValue({ text: '  hello there  ' });
 
     const text = await voiceSessionManager.transcribeUtterance(Buffer.alloc(1200));
 
     expect(fakeRecognizer.createStream).toHaveBeenCalled();
     expect(fakeRecognizer.decode).toHaveBeenCalled();
-    expect(text).toBe('hello there');
+    expect(text).toBe('Hello there');
   });
 
   it('serializes overlapping transcription calls', async () => {
@@ -133,7 +138,79 @@ describe('getRecognizer / transcribeUtterance', () => {
     // the queue must recover for subsequent calls
     fs.existsSync.mockReturnValue(true);
     fakeRecognizer.getResult.mockReturnValue({ text: 'recovered' });
-    await expect(voiceSessionManager.transcribeUtterance(Buffer.alloc(1200))).resolves.toBe('recovered');
+    await expect(voiceSessionManager.transcribeUtterance(Buffer.alloc(1200))).resolves.toBe('Recovered');
+  });
+});
+
+describe('SILENCE_DURATION_MS', () => {
+  it('defaults to a generous pause tolerance so mid-sentence pauses do not split an utterance', () => {
+    expect(voiceSessionManager.SILENCE_DURATION_MS).toBe(2500);
+  });
+});
+
+describe('formatTranscript', () => {
+  it('lowercases all-caps ASR output, restores punctuation via the model, and re-applies sentence casing', () => {
+    mockOfflinePunctuation.mockImplementation(() => ({
+      addPunct: jest.fn(() => 'hello there. how are you?'),
+    }));
+
+    const text = voiceSessionManager.formatTranscript('HELLO THERE HOW ARE YOU');
+
+    expect(text).toBe('Hello there. How are you?');
+  });
+
+  it('normalizes the full-width Chinese punctuation the bilingual model emits for English text', () => {
+    mockOfflinePunctuation.mockImplementation(() => ({
+      addPunct: jest.fn(() => 'hello，there，how are you today？'),
+    }));
+
+    const text = voiceSessionManager.formatTranscript('HELLO THERE HOW ARE YOU TODAY');
+
+    expect(text).toBe('Hello, there, how are you today?');
+  });
+
+  it('capitalizes the standalone pronoun "i"', () => {
+    mockOfflinePunctuation.mockImplementation(() => ({
+      addPunct: jest.fn((text) => text),
+    }));
+
+    const text = voiceSessionManager.formatTranscript('I THINK I AM READY');
+
+    expect(text).toBe('I think I am ready');
+  });
+
+  it('falls back to lowercased, sentence-cased text without punctuation when the model file is missing', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    fs.existsSync.mockReturnValue(false);
+
+    const text = voiceSessionManager.formatTranscript('HELLO THERE');
+
+    expect(text).toBe('Hello there');
+    expect(mockOfflinePunctuation).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Punctuation model file missing'));
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('falls back to unpunctuated sentence-cased text if the punctuation model throws', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockOfflinePunctuation.mockImplementation(() => ({
+      addPunct: jest.fn(() => { throw new Error('boom'); }),
+    }));
+
+    const text = voiceSessionManager.formatTranscript('HELLO THERE');
+
+    expect(text).toBe('Hello there');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Failed to restore punctuation for transcript:', expect.any(Error));
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('getPunctuator', () => {
+  it('constructs the punctuator only once across repeated calls', () => {
+    voiceSessionManager.getPunctuator();
+    voiceSessionManager.getPunctuator();
+
+    expect(mockOfflinePunctuation).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -252,6 +329,7 @@ describe('captureUtterance', () => {
 
   it('splits an utterance longer than the Discord message limit into multiple messages', async () => {
     const longText = 'word '.repeat(500).trim(); // well over 2000 characters
+    const expectedText = `Word${longText.slice(4)}`; // formatTranscript capitalizes the first letter
     mockOfflineRecognizer.mockImplementation(() => ({
       createStream: jest.fn(() => ({ acceptWaveform: jest.fn() })),
       decode: jest.fn(),
@@ -268,7 +346,7 @@ describe('captureUtterance', () => {
     session.textChannel.send.mock.calls.forEach(([message]) => {
       expect(message.length).toBeLessThanOrEqual(2000);
     });
-    expect(ListenUtterance.create).toHaveBeenCalledWith(expect.objectContaining({ content: longText }));
+    expect(ListenUtterance.create).toHaveBeenCalledWith(expect.objectContaining({ content: expectedText }));
   });
 
   it('does not double-subscribe a user already being captured', () => {

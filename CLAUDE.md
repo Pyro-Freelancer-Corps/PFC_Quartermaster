@@ -90,6 +90,17 @@ curl -L -o models/stt/tokens.txt https://huggingface.co/csukuangfj/sherpa-onnx-z
 
 If these files are missing, `/listen start` still joins the voice channel but logs an error and skips transcription instead of crashing.
 
+The ASR model above outputs text in all caps with no punctuation (a GigaSpeech training-data convention). Before an utterance is posted or persisted, `formatTranscript()` in [botactions/voice/voiceSessionManager.js](botactions/voice/voiceSessionManager.js) lowercases it and runs it through a punctuation-restoration model (`sherpa_onnx.OfflinePunctuation`, ~76MB `model.int8.onnx`, committed into `models/punct/` for the same no-download-step reason as the STT model above). That model restores commas/periods/question marks but deliberately does not fix casing, so sentence-start and standalone-"I" capitalization is reapplied afterward with a plain regex heuristic — it won't catch proper nouns, but that's an acceptable tradeoff for a live voice-channel transcript. The model is bilingual (zh-en) and always emits full-width Chinese punctuation (，。？！、) even for English text, so `normalizePunctuation()` maps those to their ASCII equivalents before casing is applied. `PUNCT_MODEL_DIR` (defaults to `models/punct/`) overrides the path. A missing punctuation model is non-fatal — same as a missing STT model, it logs once and the transcript is posted lowercased-and-capitalized but without restored punctuation. The current model is `sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8`, originally from:
+
+```bash
+curl -L -o /tmp/punct.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8.tar.bz2
+tar xjf /tmp/punct.tar.bz2 -C /tmp
+cp /tmp/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8/model.int8.onnx models/punct/model.int8.onnx
+cp /tmp/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8/tokens.json models/punct/tokens.json
+```
+
+`/listen` waits for `VOICE_SILENCE_MS` (defaults to 2500ms) of silence before treating an utterance as finished — kept well above a natural conversational pause (~300-500ms) because ending too eagerly splits one sentence into several separately-punctuated utterances. Lower it per-host via env if faster turnaround matters more than sentence continuity.
+
 ## Testing
 
 - Jest with 80% coverage threshold (branches, functions, lines, statements)

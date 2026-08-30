@@ -6,7 +6,11 @@ const sherpa_onnx = require('sherpa-onnx-node');
 const { ListenSession, ListenUtterance } = require('../../config/database');
 
 const MIN_UTTERANCE_MS = 500;
-const SILENCE_DURATION_MS = 1000;
+// How long a speaker can pause before their utterance is considered finished.
+// Kept generous (vs. a "natural" ~300-500ms conversational pause) because ending
+// too eagerly splits one sentence into several broken, separately-punctuated
+// utterances. Overridable per-host via env in case a shorter cutoff is wanted.
+const SILENCE_DURATION_MS = Number(process.env.VOICE_SILENCE_MS) || 2500;
 const SAMPLE_RATE_IN = 48000;
 const CHANNELS_IN = 2;
 const BYTES_PER_SAMPLE = 2;
@@ -16,6 +20,7 @@ const DOWNSAMPLE_FACTOR = SAMPLE_RATE_IN / SAMPLE_RATE_OUT;
 const sessions = new Map(); // guildId -> session state
 
 let recognizer = null;
+let punctuator = null;
 let transcriptionQueue = Promise.resolve();
 
 function hasActiveSession(guildId) {
@@ -96,6 +101,81 @@ function getRecognizer() {
   return recognizer;
 }
 
+function getPunctuationModelPath() {
+  const dir = process.env.PUNCT_MODEL_DIR || path.join(__dirname, '..', '..', 'models', 'punct');
+  return path.join(dir, 'model.int8.onnx');
+}
+
+let warnedMissingPunctuator = false;
+
+// Lazily loads the punctuation-restoration model. Unlike getRecognizer(), a
+// missing model here is non-fatal: transcription is still useful without
+// punctuation, so callers fall back to the raw ASR text instead of throwing.
+function getPunctuator() {
+  if (punctuator) return punctuator;
+
+  const ctTransformer = getPunctuationModelPath();
+  if (!fs.existsSync(ctTransformer)) {
+    if (!warnedMissingPunctuator) {
+      console.error(
+        `❌ Punctuation model file missing: ${ctTransformer}. See CLAUDE.md "Voice transcription model" for the download command. Transcripts will be posted without punctuation or sentence casing.`
+      );
+      warnedMissingPunctuator = true;
+    }
+    return null;
+  }
+
+  punctuator = new sherpa_onnx.OfflinePunctuation({
+    model: { ctTransformer, numThreads: 1, provider: 'cpu', debug: 0 }
+  });
+
+  return punctuator;
+}
+
+// The punctuation model is trained on bilingual zh-en data and always emits
+// full-width Chinese punctuation marks (，。？！、), even for pure English
+// text — those look out of place in a Discord transcript, so they're mapped
+// to their ASCII equivalents (with a trailing space, since the model attaches
+// them directly to the preceding word with no space of their own).
+function normalizePunctuation(text) {
+  return text
+    .replace(/、|，/g, ',')
+    .replace(/。/g, '.')
+    .replace(/？/g, '?')
+    .replace(/！/g, '!')
+    .replace(/([,.?!])(?=\S)/g, '$1 ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// The ASR model transcribes in all caps with no punctuation (a GigaSpeech
+// training-data convention), so every utterance needs cosmetic cleanup before
+// it's fit to read. The ct-transformer model restores punctuation but
+// deliberately does not touch casing, so sentence/pronoun capitalization is
+// re-applied afterward with a simple heuristic — it won't catch proper nouns,
+// but that's an acceptable tradeoff for a live voice-channel transcript.
+function capitalizeSentences(text) {
+  return text
+    .replace(/(^\s*[a-z])|([.!?]\s+[a-z])/g, (match) => match.toUpperCase())
+    .replace(/\bi\b/g, 'I');
+}
+
+function formatTranscript(text) {
+  const lowercased = text.toLowerCase();
+
+  const punct = getPunctuator();
+  let punctuated = lowercased;
+  if (punct) {
+    try {
+      punctuated = normalizePunctuation(punct.addPunct(lowercased));
+    } catch (error) {
+      console.error('❌ Failed to restore punctuation for transcript:', error);
+    }
+  }
+
+  return capitalizeSentences(punctuated).trim();
+}
+
 function runTranscription(pcmBuffer) {
   const rec = getRecognizer();
   const samples = downsampleTo16kMono(pcmBuffer);
@@ -103,7 +183,8 @@ function runTranscription(pcmBuffer) {
   stream.acceptWaveform({ samples, sampleRate: SAMPLE_RATE_OUT });
   rec.decode(stream);
   const result = rec.getResult(stream);
-  return ((result && result.text) || '').trim();
+  const text = ((result && result.text) || '').trim();
+  return text ? formatTranscript(text) : text;
 }
 
 // Serializes all recognizer calls: the native binding's thread-safety under
@@ -330,7 +411,11 @@ module.exports = {
   pcmDurationMs,
   transcribeUtterance,
   getRecognizer,
+  getPunctuator,
+  formatTranscript,
   MIN_UTTERANCE_MS,
-  // Test-only: resets the module-level recognizer singleton between test cases.
-  __resetRecognizerForTests: () => { recognizer = null; }
+  SILENCE_DURATION_MS,
+  // Test-only: resets the module-level recognizer/punctuator singletons between test cases.
+  __resetRecognizerForTests: () => { recognizer = null; },
+  __resetPunctuatorForTests: () => { punctuator = null; warnedMissingPunctuator = false; }
 };
