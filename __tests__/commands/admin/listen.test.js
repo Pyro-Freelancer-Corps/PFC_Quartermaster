@@ -17,8 +17,7 @@ const { execute } = require('../../../commands/admin/listen');
 function createInteraction({
   isAdmin = true,
   sub = 'start',
-  voiceChannel = { id: 'vc1', name: 'General' },
-  channelId = 'tc1',
+  voiceChannel = { id: 'vc1', name: 'General', send: jest.fn().mockResolvedValue() },
 } = {}) {
   return {
     member: {
@@ -27,8 +26,7 @@ function createInteraction({
       voice: { channel: voiceChannel },
     },
     guild: { id: 'g1' },
-    channel: { id: channelId, send: jest.fn().mockResolvedValue() },
-    client: { chanBotLog: 'log-channel-id' },
+    channel: { id: 'tc1', send: jest.fn().mockResolvedValue() },
     options: { getSubcommand: jest.fn(() => sub) },
     reply: jest.fn().mockResolvedValue(),
     deferReply: jest.fn().mockResolvedValue(),
@@ -67,18 +65,6 @@ describe('/listen command', () => {
       expect(voiceSessionManager.startListening).not.toHaveBeenCalled();
     });
 
-    it('rejects when run in the bot\'s activity log channel', async () => {
-      const interaction = createInteraction({ channelId: 'log-channel-id' });
-
-      await execute(interaction);
-
-      expect(interaction.reply).toHaveBeenCalledWith(expect.objectContaining({
-        content: expect.stringContaining('activity log channel'),
-        flags: MessageFlags.Ephemeral,
-      }));
-      expect(voiceSessionManager.startListening).not.toHaveBeenCalled();
-    });
-
     it('rejects when a session is already active in the guild', async () => {
       voiceSessionManager.hasActiveSession.mockReturnValue(true);
       const interaction = createInteraction();
@@ -92,21 +78,23 @@ describe('/listen command', () => {
       expect(voiceSessionManager.startListening).not.toHaveBeenCalled();
     });
 
-    it('starts a session and posts a consent notice on success', async () => {
+    it('starts a session and posts a consent notice to the voice channel\'s own chat', async () => {
       voiceSessionManager.hasActiveSession.mockReturnValue(false);
       voiceSessionManager.startListening.mockResolvedValue({});
       const interaction = createInteraction();
+      const voiceChannel = interaction.member.voice.channel;
 
       await execute(interaction);
 
       expect(interaction.deferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
       expect(voiceSessionManager.startListening).toHaveBeenCalledWith({
         guild: interaction.guild,
-        voiceChannel: interaction.member.voice.channel,
-        textChannel: interaction.channel,
+        voiceChannel,
+        textChannel: voiceChannel,
         startedByUserId: 'user1',
       });
-      expect(interaction.channel.send).toHaveBeenCalledWith(expect.stringContaining('started'));
+      expect(voiceChannel.send).toHaveBeenCalledWith(expect.stringContaining('started'));
+      expect(interaction.channel.send).not.toHaveBeenCalled();
       expect(interaction.editReply).toHaveBeenCalledWith({ content: '✅ Listening started.' });
     });
 

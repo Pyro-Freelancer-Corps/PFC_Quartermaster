@@ -42,13 +42,6 @@ module.exports = {
         });
       }
 
-      if (interaction.channel.id === interaction.client.chanBotLog) {
-        return interaction.reply({
-          content: '⚠️ This is the bot\'s activity log channel — a live transcript here would be buried by log spam. Run `/listen start` in the channel you actually want to watch.',
-          flags: MessageFlags.Ephemeral
-        });
-      }
-
       if (voiceSessionManager.hasActiveSession(guild.id)) {
         return interaction.reply({
           content: '⚠️ A listening session is already active in this server.',
@@ -62,12 +55,12 @@ module.exports = {
         await voiceSessionManager.startListening({
           guild,
           voiceChannel,
-          textChannel: interaction.channel,
+          textChannel: voiceChannel,
           startedByUserId: interaction.member.id
         });
 
-        await interaction.channel.send(
-          `📢 **Voice transcription started** by <@${interaction.member.id}> in **${voiceChannel.name}**. ` +
+        await voiceChannel.send(
+          `📢 **Voice transcription started** by <@${interaction.member.id}>. ` +
           'Recording and transcribing until stopped with `/listen stop`.'
         );
 
