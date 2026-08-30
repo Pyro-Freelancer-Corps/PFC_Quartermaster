@@ -49,6 +49,8 @@ const AmbientSetting = require('../models/ambientSetting')(sequelize);
 const SiteContent = require('../models/siteContent')(sequelize);
 const SpamDetection = require('../models/spamDetection')(sequelize);
 const ScChangelogEntry = require('../models/scChangelogEntry')(sequelize);
+const ListenSession = require('../models/listenSession')(sequelize);
+const ListenUtterance = require('../models/listenUtterance')(sequelize);
 
 Object.values(sequelize.models).forEach(model => {
     if (typeof model.associate === 'function') {
@@ -114,5 +116,7 @@ module.exports = {
     AmbientSetting,
     SiteContent,
     SpamDetection,
-    ScChangelogEntry
+    ScChangelogEntry,
+    ListenSession,
+    ListenUtterance
 };
