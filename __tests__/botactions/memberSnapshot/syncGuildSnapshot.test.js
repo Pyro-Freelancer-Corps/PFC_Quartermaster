@@ -15,12 +15,14 @@ const { syncGuildSnapshot, _private } = require('../../../botactions/memberSnaps
 const { Accolade, AccoladeRecipient, OfficerProfile } = require('../../../config/database');
 const { fetchGuildMembers } = require('../../../utils/fetchGuildMembers');
 
-const makeRole = (id, { permissions = { has: () => false }, position = 1, name = 'Role', hexColor = '#fff' } = {}) => ({
+const makeRole = (id, { permissions = { has: () => false }, position = 1, name = 'Role', hexColor = '#fff', hoist = true, managed = false } = {}) => ({
   id,
   permissions,
   position,
   name,
-  hexColor
+  hexColor,
+  hoist,
+  managed
 });
 
 const makeMember = ({ id, roles = [], permissionsHas = () => false, username = 'user', displayName = 'User' }) => ({
@@ -184,6 +186,33 @@ describe('memberSnapshot helpers', () => {
     expect(result).toBe(0);
   });
 
+  test('snapshotOfficers excludes bots even if they have KickMembers', async () => {
+    OfficerProfile.bulkCreate.mockResolvedValue();
+    const members = [
+      {
+        id: '1',
+        user: { username: 'human', bot: false },
+        displayName: 'Human Officer',
+        permissions: { has: () => true },
+        roles: { cache: [{ id: 'role1', permissions: { has: () => true }, position: 5, name: 'Officer', hexColor: '#abc', hoist: true, managed: false }] }
+      },
+      {
+        id: '2',
+        user: { username: 'bot', bot: true },
+        displayName: 'Bot Officer',
+        permissions: { has: () => true },
+        roles: { cache: [{ id: 'role2', permissions: { has: () => true }, position: 9, name: 'Bot Role', hexColor: '#def', hoist: true, managed: false }] }
+      }
+    ];
+
+    const result = await _private.snapshotOfficers(members, 789);
+
+    expect(result).toBe(1);
+    expect(OfficerProfile.bulkCreate).toHaveBeenCalledWith([
+      expect.objectContaining({ user_id: '1' })
+    ]);
+  });
+
   test('snapshotOfficers handles bulk create failures', async () => {
     OfficerProfile.bulkCreate.mockRejectedValueOnce(new Error('db'));
     const members = [
@@ -192,10 +221,67 @@ describe('memberSnapshot helpers', () => {
         user: { username: 'O' },
         displayName: 'Officer',
         permissions: { has: () => true },
-        roles: { cache: [{ id: 'role', permissions: { has: () => true }, position: 1 }] }
+        roles: { cache: [{ id: 'role', permissions: { has: () => true }, position: 1, hoist: true, managed: false }] }
       }
     ];
     const result = await _private.snapshotOfficers(members, 456);
     expect(result).toBe(0);
+  });
+
+  test('isOfficerRole requires hoisted, non-managed roles with Kick Members', () => {
+    const rank = makeRole('rank', { permissions: { has: () => true }, hoist: true, managed: false });
+    const nonHoistedAdmin = makeRole('admin', { permissions: { has: () => true }, hoist: false, managed: false });
+    const botIntegrationRole = makeRole('bot', { permissions: { has: () => true }, hoist: true, managed: true });
+    const noKickPermission = makeRole('junior', { permissions: { has: () => false }, hoist: true, managed: false });
+
+    expect(_private.isOfficerRole(rank)).toBe(true);
+    expect(_private.isOfficerRole(nonHoistedAdmin)).toBe(false);
+    expect(_private.isOfficerRole(botIntegrationRole)).toBe(false);
+    expect(_private.isOfficerRole(noKickPermission)).toBe(false);
+  });
+
+  test('snapshotOfficers ignores a non-hoisted admin-permission role even when it outranks the real rank', async () => {
+    OfficerProfile.bulkCreate.mockResolvedValue();
+    const members = [
+      {
+        id: '1',
+        user: { username: 'human', bot: false },
+        displayName: 'Human Officer',
+        roles: {
+          cache: [
+            { id: 'serverAdmin', permissions: { has: () => true }, position: 47, name: 'Server Admin', hexColor: '#f00', hoist: false, managed: false },
+            { id: 'fleetAdmiral', permissions: { has: () => true }, position: 36, name: 'Fleet Admiral', hexColor: '#0f0', hoist: true, managed: false }
+          ]
+        }
+      }
+    ];
+
+    const result = await _private.snapshotOfficers(members, 999);
+
+    expect(result).toBe(1);
+    expect(OfficerProfile.bulkCreate).toHaveBeenCalledWith([
+      expect.objectContaining({ user_id: '1', role_name: 'Fleet Admiral', role_position: 36 })
+    ]);
+  });
+
+  test('snapshotOfficers excludes members whose only qualifying role is a non-hoisted admin role', async () => {
+    OfficerProfile.bulkCreate.mockClear();
+    const members = [
+      {
+        id: '1',
+        user: { username: 'admin-only', bot: false },
+        displayName: 'Admin Only',
+        roles: {
+          cache: [
+            { id: 'serverAdmin', permissions: { has: () => true }, position: 47, name: 'Server Admin', hexColor: '#f00', hoist: false, managed: false }
+          ]
+        }
+      }
+    ];
+
+    const result = await _private.snapshotOfficers(members, 999);
+
+    expect(result).toBe(0);
+    expect(OfficerProfile.bulkCreate).not.toHaveBeenCalled();
   });
 });

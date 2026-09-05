@@ -8,7 +8,24 @@
       "Bash(dir:*)",
       "Bash(npm test:*)",
       "Bash(git add:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(npm test *)",
+      "Bash(echo \"EXIT CODE: $?\")",
+      "Read(//tmp/**)",
+      "Skill(deep-research)",
+      "Skill(deep-research:*)",
+      "WebSearch",
+      "Bash(npm install *)",
+      "Bash(node -e ' *)",
+      "Bash(npx jest *)",
+      "Bash(mkdir -p models/stt)",
+      "Bash(curl -L -o models/stt/encoder.onnx https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/resolve/main/encoder-epoch-99-avg-1.int8.onnx)",
+      "Bash(curl -L -o models/stt/decoder.onnx https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/resolve/main/decoder-epoch-99-avg-1.int8.onnx)",
+      "Bash(curl -L -o models/stt/joiner.onnx https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/resolve/main/joiner-epoch-99-avg-1.int8.onnx)",
+      "Bash(curl -L -o models/stt/tokens.txt https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/resolve/main/tokens.txt)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npm list *)",
+      "Bash(echo \"FINAL EXIT: $?\")"
     ]
   }
 }

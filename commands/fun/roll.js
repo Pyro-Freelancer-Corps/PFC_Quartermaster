@@ -40,8 +40,8 @@ module.exports = {
       await interaction.reply({ embeds: [embed] });
 
     } catch (err) {
-      console.error(err);
-      await interaction.reply({ content: `❌ Invalid dice formula: \`${formula}\``, flags: MessageFlags.Ephemeral });
+      console.warn(`⚠️ Rejected dice formula "${formula}": ${err.message}`);
+      await interaction.reply({ content: `❌ ${err.message}`, flags: MessageFlags.Ephemeral });
     }
   }
 };
