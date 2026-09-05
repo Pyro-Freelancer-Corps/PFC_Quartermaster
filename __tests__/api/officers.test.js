@@ -17,8 +17,8 @@ beforeEach(() => {
 describe('api/officers listOfficers', () => {
   test('returns officers from cached profiles', async () => {
     OfficerProfile.findAll.mockResolvedValue([
-      { user_id: '1', username: 'A', display_name: 'Alpha', role_name: 'Officer', role_color: '#fff', synced_at: 100 },
-      { user_id: '2', username: 'B', display_name: 'Bravo', role_name: 'Captain', role_color: '#000', synced_at: 120 }
+      { user_id: '1', username: 'A', display_name: 'Alpha', role_name: 'Officer', role_position: 3, role_color: '#fff', synced_at: 100 },
+      { user_id: '2', username: 'B', display_name: 'Bravo', role_name: 'Captain', role_position: 5, role_color: '#000', synced_at: 120 }
     ]);
     OfficerBio.findAll.mockResolvedValue([
       { discordUserId: '1', bio: 'hi' }
@@ -31,8 +31,8 @@ describe('api/officers listOfficers', () => {
     expect(OfficerBio.findAll).toHaveBeenCalledWith({ where: { discordUserId: ['1', '2'] } });
     expect(res.json).toHaveBeenCalledWith({
       officers: [
-        { userId: '2', username: 'B', displayName: 'Bravo', roleName: 'Captain', roleColor: '#000', bio: null, syncedAt: 120 },
-        { userId: '1', username: 'A', displayName: 'Alpha', roleName: 'Officer', roleColor: '#fff', bio: 'hi', syncedAt: 100 }
+        { userId: '2', username: 'B', displayName: 'Bravo', roleName: 'Captain', rolePosition: 5, roleColor: '#000', bio: null, syncedAt: 120 },
+        { userId: '1', username: 'A', displayName: 'Alpha', roleName: 'Officer', rolePosition: 3, roleColor: '#fff', bio: 'hi', syncedAt: 100 }
       ],
       syncedAt: 120,
       stale: false

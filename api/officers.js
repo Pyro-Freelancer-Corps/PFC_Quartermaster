@@ -22,6 +22,7 @@ async function listOfficers(req, res) {
         username: data.username,
         displayName: data.display_name,
         roleName: data.role_name,
+        rolePosition: data.role_position,
         roleColor: data.role_color,
         bio: biosById[data.user_id] || null,
         syncedAt: data.synced_at

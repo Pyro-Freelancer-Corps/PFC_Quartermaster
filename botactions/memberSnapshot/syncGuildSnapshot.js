@@ -8,6 +8,17 @@ const { fetchGuildMembers, _private: fetchHelpers } = require('../../utils/fetch
 
 const toArray = fetchHelpers.toArray;
 
+// A role counts as an officer rank when it's hoisted (shown separately in the
+// member list) and grants Kick Members, and isn't a bot's own integration
+// role. This excludes permission-utility roles (e.g. "Server Admin", which
+// isn't hoisted) without hardcoding any specific role name or ID.
+function isOfficerRole(role) {
+  return Boolean(role)
+    && !role.managed
+    && Boolean(role.hoist)
+    && Boolean(role.permissions?.has?.(PermissionFlagsBits.KickMembers));
+}
+
 async function syncGuildSnapshot(client) {
   const guildId = client?.config?.guildId;
   if (!guildId) {
@@ -95,7 +106,9 @@ async function snapshotAccolades(members, syncedAt) {
 }
 
 async function snapshotOfficers(members, syncedAt) {
-  const officers = members.filter(member => member.permissions?.has?.(PermissionFlagsBits.KickMembers));
+  const officers = members.filter(member =>
+    !member.user?.bot && toArray(member.roles?.cache).some(isOfficerRole)
+  );
   if (officers.length === 0) {
     await OfficerProfile.destroy({ where: {} });
     return 0;
@@ -103,16 +116,17 @@ async function snapshotOfficers(members, syncedAt) {
 
   const rows = officers.map(member => {
     const eligibleRoles = toArray(member.roles?.cache)
-      .filter(role => role.permissions?.has?.(PermissionFlagsBits.KickMembers))
+      .filter(isOfficerRole)
       .sort((a, b) => (b?.position || 0) - (a?.position || 0));
-    const kickRole = eligibleRoles[0];
+    const rankRole = eligibleRoles[0];
 
     return {
       user_id: member.id,
       username: member.user?.username || null,
       display_name: member.displayName || member.user?.globalName || null,
-      role_name: kickRole?.name || null,
-      role_color: kickRole?.hexColor || null,
+      role_name: rankRole?.name || null,
+      role_position: rankRole?.position ?? null,
+      role_color: rankRole?.hexColor || null,
       synced_at: syncedAt
     };
   });
@@ -135,6 +149,7 @@ module.exports = {
   _private: {
     toArray,
     memberHasRole,
+    isOfficerRole,
     snapshotAccolades,
     snapshotOfficers
   }

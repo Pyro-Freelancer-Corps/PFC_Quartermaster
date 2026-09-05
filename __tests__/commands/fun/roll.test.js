@@ -34,17 +34,22 @@ test('sends embed without reason when not provided', async () => {
   expect(embed.footer).toEqual({ text: null });
 });
 
-test('handles invalid formula error', async () => {
-  parseDice.mockImplementation(() => { throw new Error('bad'); });
+test('handles invalid formula error by showing the specific reason, not a generic message', async () => {
+  parseDice.mockImplementation(() => { throw new Error('Unsupported die: d3. Valid dice are d4, d6, d8, d10, d12, d20, d100.'); });
+  const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
   const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-  const interaction = { options: { getString: jest.fn(() => 'bad') }, reply: jest.fn() };
+  const interaction = { options: { getString: jest.fn(() => '1d3') }, reply: jest.fn() };
 
   await roll.execute(interaction);
 
   expect(interaction.reply).toHaveBeenCalledWith({
-    content: expect.stringContaining('Invalid dice formula'),
+    content: '❌ Unsupported die: d3. Valid dice are d4, d6, d8, d10, d12, d20, d100.',
     flags: MessageFlags.Ephemeral,
   });
+  // a rejected formula is expected user-input, not an operational bug — no full stack trace log
+  expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unsupported die: d3'));
+  expect(errSpy).not.toHaveBeenCalled();
+  warnSpy.mockRestore();
   errSpy.mockRestore();
 });
 

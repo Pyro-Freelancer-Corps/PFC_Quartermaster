@@ -18,6 +18,10 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    role_position: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     role_color: {
       type: DataTypes.STRING,
       allowNull: true
