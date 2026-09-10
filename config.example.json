@@ -1,0 +1,26 @@
+{
+  "token": "your-discord-bot-token",
+  "guildId": "000000000000000000",
+  "clientId": "000000000000000000",
+  "clientSecret": "your-discord-oauth-client-secret",
+  "SCAPIkey": "your-star-citizen-wiki-api-key",
+  "botPermsReq": "2147483648",
+  "bot_type": "Development",
+  "wallOfFameChannelId": "000000000000000000",
+  "adminRoleIds": [],
+  "modLogChannelId": "000000000000000000",
+  "spamDetection": {
+    "trustedRoles": [],
+    "thresholds": {
+      "trusted": {
+        "accountAgeDays": 30,
+        "joinAgeDays": 7,
+        "messageCount": 10
+      },
+      "member": {
+        "accountAgeDays": 7,
+        "joinAgeHours": 24
+      }
+    }
+  }
+}

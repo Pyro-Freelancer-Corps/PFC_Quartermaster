@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [master, development]
+  pull_request:
+    branches: [master, development]
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22.x matches the version the bot runs on in production.
+        node: ['22.x']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # config.json holds live secrets and is gitignored, but several modules
+      # require() it at load time. The committed example has the same shape
+      # with placeholder values, which is all the test suite needs.
+      # databaseConfig.json is not needed - the DB is mocked in tests.
+      - name: Provide placeholder config
+        run: cp config.example.json config.json
+
+      # Runs pretest (swagger generation) then jest, which enforces the
+      # 80% global coverage threshold from jest.config.js.
+      - name: Run tests
+        run: npm test
