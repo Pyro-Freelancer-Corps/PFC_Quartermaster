@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PFC Quartermaster is a Discord bot for the Pyro Freelancers Corps Star Citizen organization. It features slash commands, an Express REST API, Sequelize ORM with MySQL, and integrations with OpenAI, Google Drive, and Star Citizen APIs (RSI, UEX).
+PFC Quartermaster is a Discord bot for the Pyro Freelancers Corps Star Citizen organization. It features slash commands, an Express REST API, Sequelize ORM with MySQL, and integrations with OpenAI, Google Drive, and the Star Citizen wiki API.
 
 ## Commands
 
@@ -38,7 +38,7 @@ npx jest __tests__/path/to/test.test.js
 | `/models/` | Sequelize model definitions |
 | `/config/` | Database and bot configuration |
 | `/jobs/` | Background job logic (log flushing, guild snapshots) |
-| `/utils/` | Shared utilities (API sync, trade calculations, profile scraping) |
+| `/utils/` | Shared utilities (API sync, profile scraping) |
 
 ### Command Structure
 Commands use discord.js SlashCommandBuilder. Each command file exports:
@@ -112,6 +112,6 @@ cp /tmp/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8/token
 
 ## Key Integrations
 
-- **Star Citizen APIs**: RSI profile scraping, UEX trading data sync
+- **Star Citizen APIs**: RSI profile scraping, star-citizen.wiki data sync (manufacturers, vehicles, Galactapedia)
 - **OpenAI**: AI-powered responses, triggered by bot mentions, in [botactions/eventHandling/messageEvents.js](botactions/eventHandling/messageEvents.js)
 - **Google Drive**: Document access via service account credentials

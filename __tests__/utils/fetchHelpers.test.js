@@ -1,5 +1,4 @@
 const { fetchSCData } = require('../../utils/fetchSCData');
-const { fetchUexData } = require('../../utils/fetchUexData');
 const fetch = require('node-fetch');
 
 jest.mock('node-fetch');
@@ -40,29 +39,6 @@ describe('fetch helpers', () => {
     test('throws on network error', async () => {
       fetch.mockRejectedValue(new Error('net'));
       await expect(fetchSCData('ships')).rejects.toThrow('net');
-    });
-  });
-
-  describe('fetchUexData', () => {
-    test('returns json on success', async () => {
-      fetch.mockResolvedValue({
-        ok: true,
-        json: async () => ({ foo: 'bar' })
-      });
-      const data = await fetchUexData('items');
-      expect(data).toEqual({ foo: 'bar' });
-    });
-
-    test('returns empty object on http error', async () => {
-      fetch.mockResolvedValue({ ok: false, status: 500, statusText: 'fail' });
-      const data = await fetchUexData('items');
-      expect(data).toEqual({});
-    });
-
-    test('returns empty object on network error', async () => {
-      fetch.mockRejectedValue(new Error('net'));
-      const data = await fetchUexData('items');
-      expect(data).toEqual({});
     });
   });
 });

@@ -4,20 +4,19 @@ const { MockInteraction } = require('../../../__mocks__/discord.js');
 
 jest.mock('../../../botactions/api/syncEndpoints', () => ({
   syncManufacturers: jest.fn().mockResolvedValue({}),
-  syncUexTerminals: jest.fn().mockResolvedValue({}),
   syncVehicles: jest.fn().mockResolvedValue({}),
   syncGalactapedia: jest.fn().mockResolvedValue({}),
   syncGalactapediaDetails: jest.fn().mockResolvedValue({}),
-  syncUexVehicles: jest.fn().mockResolvedValue({}),
-  syncUexItemPrices: jest.fn().mockResolvedValue({}),
-  syncUexCategories: jest.fn().mockResolvedValue({}),
-  syncUexCommodityPrices: jest.fn().mockResolvedValue({}),
-  syncUexFuelPrices: jest.fn().mockResolvedValue({}),
-  syncUexVehiclePurchasePrices: jest.fn().mockResolvedValue({}),
-  syncUexVehicleRentalPrices: jest.fn().mockResolvedValue({}),
-  syncUexPois: jest.fn().mockResolvedValue({}),
   syncOrgs: jest.fn().mockResolvedValue({}),
 }));
+
+const STEPS = [
+  'Manufacturers',
+  'Galactapedia',
+  'Galactapedia Details',
+  'Vehicles (wiki)',
+  'Organizations',
+];
 
 describe('runFullApiSync', () => {
   let errorSpy;
@@ -39,7 +38,10 @@ describe('runFullApiSync', () => {
     for (const fn of Object.values(syncEndpoints)) {
       expect(fn).toHaveBeenCalled();
     }
-    expect(results).toHaveProperty('Shops');
+    for (const step of STEPS) {
+      expect(results).toHaveProperty(step);
+    }
+    expect(Object.keys(results)).toHaveLength(STEPS.length);
   });
 
   test('handles errors from an endpoint', async () => {
@@ -53,22 +55,29 @@ describe('runFullApiSync', () => {
     const interaction = new MockInteraction({});
     const editSpy = jest.spyOn(interaction, 'editReply');
     const results = await runFullApiSync(interaction);
-    expect(editSpy).toHaveBeenCalledTimes(16);
+
+    // one initial render, one per step, one final
+    expect(editSpy).toHaveBeenCalledTimes(STEPS.length + 2);
+
     const lastCall = editSpy.mock.calls.at(-1)[0];
     const embedData = lastCall.embeds[0].toJSON();
     expect(embedData.title).toBe('✅ API Sync Complete');
-    expect(embedData.description).toContain('Shops');
-    expect(results).toHaveProperty('Points of Interest');
+    for (const step of STEPS) {
+      expect(embedData.description).toContain(step);
+    }
+    expect(results).toHaveProperty('Organizations');
   });
 
   test('marks failed endpoint as ERR in table', async () => {
-    syncEndpoints.syncUexFuelPrices.mockRejectedValueOnce(new Error('fail'));
+    syncEndpoints.syncGalactapedia.mockRejectedValueOnce(new Error('boom'));
+
     const interaction = new MockInteraction({});
     const editSpy = jest.spyOn(interaction, 'editReply');
     const results = await runFullApiSync(interaction);
+
     const finalDesc = editSpy.mock.calls.at(-1)[0].embeds[0].toJSON().description;
     expect(finalDesc).toContain('ERR');
-    expect(results['Fuel']).toEqual({ error: true });
+    expect(results['Galactapedia']).toEqual({ error: true });
     expect(errorSpy).toHaveBeenCalled();
   });
 });

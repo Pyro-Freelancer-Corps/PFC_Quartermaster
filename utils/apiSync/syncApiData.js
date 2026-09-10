@@ -1,17 +1,8 @@
 const {
     syncManufacturers,
-    syncUexTerminals,
     syncVehicles,
     syncGalactapedia,
     syncGalactapediaDetails,
-    syncUexVehicles,
-    syncUexItemPrices,
-    syncUexCategories,
-    syncUexCommodityPrices,
-    syncUexFuelPrices,
-    syncUexVehiclePurchasePrices,
-    syncUexVehicleRentalPrices,
-    syncUexPois,
     syncOrgs,
   } = require('../../botactions/api/syncEndpoints');
 
@@ -20,7 +11,7 @@ const {
     
     function formatResultTable(results) {
       const pad = (s, len) => String(s).padEnd(len, ' ');
-      const colWidths = [18, 6, 8, 8, 6];
+      const colWidths = [20, 6, 8, 8, 6];
       const headers = ['Endpoint', 'New', 'Updated', 'Skipped', 'Total'];
       const headerRow = headers.map((h, i) => pad(h, colWidths[i])).join('| ');
       const dividerRow = colWidths.map(w => '-'.repeat(w)).join('| ');
@@ -67,19 +58,10 @@ const {
         }
       };
     
-      await updateStep('Shops', syncUexTerminals);
       await updateStep('Manufacturers', syncManufacturers);
       await updateStep('Galactapedia', syncGalactapedia);
       await updateStep('Galactapedia Details', syncGalactapediaDetails);
       await updateStep('Vehicles (wiki)', syncVehicles);
-      await updateStep('Vehicles (uex)', syncUexVehicles);
-      await updateStep('Items', syncUexItemPrices);
-      await updateStep('Categories', syncUexCategories);
-      await updateStep('Commodities', syncUexCommodityPrices);
-      await updateStep('Fuel', syncUexFuelPrices);
-      await updateStep('Vehicle Prices', syncUexVehiclePurchasePrices);
-      await updateStep('Vehicle Rentals', syncUexVehicleRentalPrices);
-      await updateStep('Points of Interest', syncUexPois);
       await updateStep('Organizations', syncOrgs);
     
       if (interaction) {

@@ -26,15 +26,6 @@ const GalactapediaProperty = require('../models/galactapediaProperty')(sequelize
 const GalactapediaRelatedArticle = require('../models/galactapediaRelatedArticle')(sequelize);
 const GalactapediaTag = require('../models/galactapediaTag')(sequelize);
 const GalactapediaCategory = require('../models/galactapediaCategory')(sequelize);
-const UexVehicle = require('../models/uexVehicle')(sequelize);
-const UexTerminal = require('../models/uexTerminal')(sequelize);
-const UexItemPrice = require('../models/uexItemPrice')(sequelize);
-const UexCategory = require('../models/uexCategory')(sequelize);
-const UexCommodityPrice = require('../models/uexCommodityPrice')(sequelize);
-const UexFuelPrice = require('../models/uexFuelPrice')(sequelize);
-const UexVehiclePurchasePrice = require('../models/uexVehiclePurchasePrice')(sequelize);
-const UexVehicleRentalPrice = require('../models/uexVehicleRentalPrice')(sequelize);
-const UexPoi = require('../models/uexPoi')(sequelize);
 const Accolade = require('../models/accolade')(sequelize);
 const AccoladeRecipient = require('../models/accoladeRecipient')(sequelize);
 const OrgTag = require('../models/orgTag')(sequelize);
@@ -94,15 +85,6 @@ module.exports = {
     GalactapediaRelatedArticle,
     GalactapediaTag,
     GalactapediaCategory,
-    UexVehicle,
-    UexTerminal,
-    UexItemPrice,
-    UexCategory,
-    UexCommodityPrice,
-    UexFuelPrice,
-    UexVehiclePurchasePrice,
-    UexVehicleRentalPrice,
-    UexPoi,
     Accolade,
     AccoladeRecipient,
     OrgTag,
