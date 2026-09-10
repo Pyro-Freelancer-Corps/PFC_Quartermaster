@@ -1,6 +1,7 @@
 const { syncManufacturers } = require('../../utils/apiSync/manufacturers');
 const { syncVehicles } = require('../../utils/apiSync/vehicles');
 const { syncGalactapedia } = require('../../utils/apiSync/galactapedia');
+const { syncGalactapediaDetails } = require('../../utils/apiSync/galactapediaDetail');
 const { syncUexVehicles } = require('../../utils/apiSync/syncUexVehicles');
 const { syncUexTerminals } = require('../../utils/apiSync/syncUexTerminals');
 const { syncUexItemPrices } = require('../../utils/apiSync/syncUexItemPrices');
@@ -41,6 +42,13 @@ async function syncAllEndpoints() {
     results.push(galactapediaResult);
   } catch (error) {
     results.push({ endpoint: 'galactapedia', success: false, error: error.message });
+  }
+
+  try {
+    const galactapediaDetailResult = await syncGalactapediaDetails();
+    results.push(galactapediaDetailResult);
+  } catch (error) {
+    results.push({ endpoint: 'galactapedia-details', success: false, error: error.message });
   }
 
   try{
@@ -114,6 +122,7 @@ module.exports = {
     syncManufacturers,
     syncVehicles,
     syncGalactapedia,
+    syncGalactapediaDetails,
     syncUexVehicles,
     syncUexTerminals,
     syncUexItemPrices,

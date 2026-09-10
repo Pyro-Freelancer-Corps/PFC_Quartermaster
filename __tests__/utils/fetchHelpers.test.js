@@ -25,22 +25,21 @@ describe('fetch helpers', () => {
       expect(result).toEqual([{ id: 1 }]);
     });
 
-    test('returns empty array on http error', async () => {
+    // A total failure must not resolve to [] - callers only check
+    // Array.isArray, so an empty array reads as a successful sync of 0 rows.
+    test('throws on http error', async () => {
       fetch.mockResolvedValue({ ok: false, status: 500, statusText: 'err' });
-      const result = await fetchSCData('ships');
-      expect(result).toEqual([]);
+      await expect(fetchSCData('ships')).rejects.toThrow('Failed to fetch page 1');
     });
 
-    test('returns empty array on malformed json', async () => {
+    test('throws on malformed json', async () => {
       fetch.mockResolvedValue({ ok: true, json: async () => ({}) });
-      const result = await fetchSCData('ships');
-      expect(result).toEqual([]);
+      await expect(fetchSCData('ships')).rejects.toThrow("Expected array in 'data'");
     });
 
-    test('returns empty array on network error', async () => {
+    test('throws on network error', async () => {
       fetch.mockRejectedValue(new Error('net'));
-      const result = await fetchSCData('ships');
-      expect(result).toEqual([]);
+      await expect(fetchSCData('ships')).rejects.toThrow('net');
     });
   });
 
