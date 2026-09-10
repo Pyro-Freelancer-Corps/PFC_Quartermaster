@@ -7,6 +7,7 @@ jest.mock('../../../botactions/api/syncEndpoints', () => ({
   syncUexTerminals: jest.fn().mockResolvedValue({}),
   syncVehicles: jest.fn().mockResolvedValue({}),
   syncGalactapedia: jest.fn().mockResolvedValue({}),
+  syncGalactapediaDetails: jest.fn().mockResolvedValue({}),
   syncUexVehicles: jest.fn().mockResolvedValue({}),
   syncUexItemPrices: jest.fn().mockResolvedValue({}),
   syncUexCategories: jest.fn().mockResolvedValue({}),
@@ -52,7 +53,7 @@ describe('runFullApiSync', () => {
     const interaction = new MockInteraction({});
     const editSpy = jest.spyOn(interaction, 'editReply');
     const results = await runFullApiSync(interaction);
-    expect(editSpy).toHaveBeenCalledTimes(15);
+    expect(editSpy).toHaveBeenCalledTimes(16);
     const lastCall = editSpy.mock.calls.at(-1)[0];
     const embedData = lastCall.embeds[0].toJSON();
     expect(embedData.title).toBe('✅ API Sync Complete');

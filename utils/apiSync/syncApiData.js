@@ -3,6 +3,7 @@ const {
     syncUexTerminals,
     syncVehicles,
     syncGalactapedia,
+    syncGalactapediaDetails,
     syncUexVehicles,
     syncUexItemPrices,
     syncUexCategories,
@@ -69,6 +70,7 @@ const {
       await updateStep('Shops', syncUexTerminals);
       await updateStep('Manufacturers', syncManufacturers);
       await updateStep('Galactapedia', syncGalactapedia);
+      await updateStep('Galactapedia Details', syncGalactapediaDetails);
       await updateStep('Vehicles (wiki)', syncVehicles);
       await updateStep('Vehicles (uex)', syncUexVehicles);
       await updateStep('Items', syncUexItemPrices);

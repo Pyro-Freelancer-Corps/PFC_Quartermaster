@@ -48,12 +48,14 @@ Commands use discord.js SlashCommandBuilder. Each command file exports:
 Commands are auto-loaded recursively from `/commands/`. If a directory has a matching parent `.js` file (e.g., `ambient.js` for `ambient/`), only the parent file is loaded.
 
 ### Event Handling Pattern
-Events flow through [botactions/eventHandling.js](botactions/eventHandling.js) which re-exports handlers from subdirectories:
-- `interactionEvents/` - Slash commands, buttons, modals
-- `messageEvents/` - Message create/delete/update
-- `reactionEvents/` - Reaction add/remove
-- `voiceEvents/` - Voice state changes
-- `moderationEvents/` - Member remove, ban, updates
+Events flow through [botactions/eventHandling.js](botactions/eventHandling.js) which re-exports handlers from sibling modules:
+- `interactionEvents.js` - Slash commands, buttons, modals, select menus
+- `messageEvents.js` - Message create/delete/update, word filtering, OpenAI replies
+- `reactionEvents.js` - Reaction add/remove
+- `voiceEvents.js` - Voice state changes
+- `moderationEvents.js` - Member remove, ban, updates
+
+Some handlers have a same-named sibling directory holding their helpers (e.g. `interactionEvents/` contains `logInteraction.js`). Node resolves `require('./interactionEvents')` to the `.js` file, not the directory.
 
 ### Database
 - Sequelize ORM with MySQL dialect
@@ -111,5 +113,5 @@ cp /tmp/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8/token
 ## Key Integrations
 
 - **Star Citizen APIs**: RSI profile scraping, UEX trading data sync
-- **OpenAI**: AI-powered responses via [botactions/eventHandling/messageEvents/openaiHandler.js](botactions/eventHandling/messageEvents/openaiHandler.js)
+- **OpenAI**: AI-powered responses, triggered by bot mentions, in [botactions/eventHandling/messageEvents.js](botactions/eventHandling/messageEvents.js)
 - **Google Drive**: Document access via service account credentials

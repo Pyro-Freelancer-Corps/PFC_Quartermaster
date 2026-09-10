@@ -18,6 +18,7 @@ const {
 jest.mock('../../../utils/apiSync/manufacturers', () => ({ syncManufacturers: jest.fn() }));
 jest.mock('../../../utils/apiSync/vehicles', () => ({ syncVehicles: jest.fn() }));
 jest.mock('../../../utils/apiSync/galactapedia', () => ({ syncGalactapedia: jest.fn() }));
+jest.mock('../../../utils/apiSync/galactapediaDetail', () => ({ syncGalactapediaDetails: jest.fn() }));
 jest.mock('../../../utils/apiSync/syncUexVehicles', () => ({ syncUexVehicles: jest.fn() }));
 jest.mock('../../../utils/apiSync/syncUexTerminals', () => ({ syncUexTerminals: jest.fn() }));
 jest.mock('../../../utils/apiSync/syncUexItemPrices', () => ({ syncUexItemPrices: jest.fn() }));
@@ -32,6 +33,7 @@ jest.mock('../../../utils/apiSync/orgs', () => ({ syncOrgs: jest.fn() }));
 const manufacturers = require('../../../utils/apiSync/manufacturers');
 const vehicles = require('../../../utils/apiSync/vehicles');
 const galactapedia = require('../../../utils/apiSync/galactapedia');
+const galactapediaDetail = require('../../../utils/apiSync/galactapediaDetail');
 const uexVehicles = require('../../../utils/apiSync/syncUexVehicles');
 const uexTerminals = require('../../../utils/apiSync/syncUexTerminals');
 const uexItemPrices = require('../../../utils/apiSync/syncUexItemPrices');
@@ -55,6 +57,7 @@ describe('syncAllEndpoints', () => {
       manufacturers.syncManufacturers,
       vehicles.syncVehicles,
       galactapedia.syncGalactapedia,
+      galactapediaDetail.syncGalactapediaDetails,
       uexVehicles.syncUexVehicles,
       uexItemPrices.syncUexItemPrices,
       uexCategories.syncUexCategories,
@@ -78,6 +81,7 @@ describe('syncAllEndpoints', () => {
     manufacturers.syncManufacturers.mockResolvedValue('a');
     vehicles.syncVehicles.mockResolvedValue('b');
     galactapedia.syncGalactapedia.mockResolvedValue('c');
+    galactapediaDetail.syncGalactapediaDetails.mockResolvedValue('cd');
     uexVehicles.syncUexVehicles.mockResolvedValue('d');
     uexItemPrices.syncUexItemPrices.mockResolvedValue('e');
     uexCategories.syncUexCategories.mockResolvedValue('f');
@@ -91,7 +95,7 @@ describe('syncAllEndpoints', () => {
     const res = await syncAllEndpoints();
 
     expect(res[0]).toEqual({ endpoint: 'terminals', success: false, error: 'fail' });
-    expect(res.slice(1)).toEqual(['a','b','c','d','e','f','g','h','i','j','k','l']);
+    expect(res.slice(1)).toEqual(['a','b','c','cd','d','e','f','g','h','i','j','k','l']);
     expect(uexTerminals.syncUexTerminals).toHaveBeenCalled();
     expect(uexPois.syncUexPois).toHaveBeenCalled();
   });
