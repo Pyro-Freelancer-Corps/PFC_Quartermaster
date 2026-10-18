@@ -18,7 +18,7 @@ const makeGuild = (hasTesterRole = false) => {
     },
     roles: {
       cache: {
-        find: jest.fn(fn => (fn({ name: 'Fleet Admiral' }) ? { id: 'fa', name: 'Fleet Admiral' } : undefined)),
+        find: jest.fn(fn => (fn({ name: 'Commodore' }) ? { id: 'fa', name: 'Commodore' } : undefined)),
       },
     },
   };
@@ -104,7 +104,7 @@ describe('/coinflip command', () => {
     });
   });
 
-  test('allows self challenge for Fleet Admiral role', async () => {
+  test('allows self challenge for Commodore role', async () => {
     const challenge = makeChallengeInteraction({ self: true, hasTesterRole: true });
     await coinflip.execute(challenge);
     expect(challenge.reply).toHaveBeenCalledWith(expect.stringContaining('has challenged'));

@@ -10,7 +10,7 @@ module.exports = {
                 .setDescription('The ID of the announcement to delete')
                 .setRequired(true))// Already includes:
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-    help: 'Deletes a scheduled announcement by its ID. Only available to Admirals and Fleet Admirals. (Admin Only)',
+    help: 'Deletes a scheduled announcement by its ID. Only available to Marshals and Commodores. (Admin Only)',
     category: 'Discord',                
     async execute(interaction) {
 

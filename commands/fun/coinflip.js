@@ -44,13 +44,13 @@ module.exports = {
       const challengerMember = await interaction.guild.members.fetch(challenger.id);
       const opponentMember = await interaction.guild.members.fetch(opponent.id);
 
-      const testerRole = interaction.guild.roles.cache.find(role => role.name === 'Fleet Admiral');
+      const testerRole = interaction.guild.roles.cache.find(role => role.name === 'Commodore');
       const isSelfChallenge = challenger.id === opponent.id;
       const isAllowedTester = testerRole && challengerMember.roles.cache.has(testerRole.id);
 
       if (isSelfChallenge && !isAllowedTester) {
         return interaction.reply({
-          content: '❌ You can’t challenge yourself unless you’ve got the Fleet Admiral role, love.',
+          content: '❌ You can’t challenge yourself unless you’ve got the Commodore role, love.',
           flags: MessageFlags.Ephemeral
         });
       }

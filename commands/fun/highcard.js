@@ -55,7 +55,7 @@ module.exports = {
       const opponentMember = await interaction.guild.members.fetch(opponent.id);
 
       if (challenger.id === opponent.id) {
-        const testerRole = interaction.guild.roles.cache.find(role => role.name === 'Fleet Admiral');
+        const testerRole = interaction.guild.roles.cache.find(role => role.name === 'Commodore');
         const hasTesterRole = testerRole && challengerMember.roles.cache.has(testerRole.id);
 
         if (!hasTesterRole) {

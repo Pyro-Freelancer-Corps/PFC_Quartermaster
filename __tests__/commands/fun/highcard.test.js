@@ -13,7 +13,7 @@ const makeGuild = (hasTester = false) => {
   };
   return {
     members: { fetch: jest.fn(id => (id === 'challenger' ? challengerMember : opponentMember)) },
-    roles: { cache: { find: jest.fn(fn => (fn({ name: 'Fleet Admiral' }) ? { id: 'fa' } : undefined)) } },
+    roles: { cache: { find: jest.fn(fn => (fn({ name: 'Commodore' }) ? { id: 'fa' } : undefined)) } },
   };
 };
 

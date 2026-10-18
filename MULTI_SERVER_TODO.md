@@ -35,7 +35,7 @@ This document outlines the work required to make the bot operate across multiple
 - **Needed**:
   - Parameterize the target organization ID and roles so any server can define their own verification rules.
   - Update tests that assert `PFCS` to use configurable values.
-  - Review other commands that assume `PFCS` membership such as `orgstatus`, `sync-org-ranks`, and `addaccolade`; make them respect the per-guild org configuration and role names (`Recruit`, `Ensign`, etc.).
+  - Review other commands that assume `PFCS` membership such as `orgstatus`, `sync-org-ranks`, and `addaccolade`; make them respect the per-guild org configuration and role names (`Recruit`, `Deckhand`, etc.).
 
 ## 6. Database Schema Updates
 - **Potential Work**:
@@ -56,7 +56,7 @@ This document outlines the work required to make the bot operate across multiple
 - Refactor these utilities to operate on the guild associated with the current event or iterate over all guilds.
 
 ## 10. Configurable Admin Roles
-- **Current**: Admin commands check for hard-coded roles like `Admiral` and `Fleet Admiral`, e.g. `deleteannouncements.js`【F:commands/admin/deleteannouncements.js†L4-L20】 and `schedule.js`【F:commands/admin/schedule.js†L11-L12】.
+- **Current**: Admin commands check for hard-coded roles like `Marshal` and `Commodore`, e.g. `deleteannouncements.js`【F:commands/admin/deleteannouncements.js†L4-L20】 and `schedule.js`【F:commands/admin/schedule.js†L11-L12】.
 - **Needed**:
   - Load required admin roles from the per-guild configuration.
   - Allow each server to define its own administrator role names.

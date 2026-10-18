@@ -22,7 +22,7 @@ describe('/verify command tests - Edge Cases', () => {
     cache: {
       find: jest.fn((fn) => [
         { name: 'Recruit', id: 'role1' },
-        { name: 'Ensign', id: 'role2' },
+        { name: 'Deckhand', id: 'role2' },
         { name: 'Pyro Freelancer Corps', id: 'role3' }
       ].find(fn))
     }

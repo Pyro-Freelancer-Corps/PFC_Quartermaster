@@ -101,13 +101,13 @@ module.exports = {
 
       if (orgId === 'PFCS') {
         const recruitRole = interaction.guild.roles.cache.find(r => r.name === 'Recruit');
-        const ensignRole = interaction.guild.roles.cache.find(r => r.name === 'Ensign');
+        const deckhandRole = interaction.guild.roles.cache.find(r => r.name === 'Deckhand');
         const pfcRole = interaction.guild.roles.cache.find(r => r.name === 'Pyro Freelancer Corps');
 
-        if (recruitRole && ensignRole && member.roles.cache.has(recruitRole.id)) {
+        if (recruitRole && deckhandRole && member.roles.cache.has(recruitRole.id)) {
           try {
             await member.roles.remove(recruitRole);
-            await member.roles.add(ensignRole);
+            await member.roles.add(deckhandRole);
             await member.roles.add(pfcRole);
           } catch (err) {
             console.warn(`[VERIFY BUTTON] Couldn't update roles:`, err.message);

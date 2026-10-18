@@ -250,7 +250,7 @@ describe('memberSnapshot helpers', () => {
         roles: {
           cache: [
             { id: 'serverAdmin', permissions: { has: () => true }, position: 47, name: 'Server Admin', hexColor: '#f00', hoist: false, managed: false },
-            { id: 'fleetAdmiral', permissions: { has: () => true }, position: 36, name: 'Fleet Admiral', hexColor: '#0f0', hoist: true, managed: false }
+            { id: 'fleetMarshal', permissions: { has: () => true }, position: 36, name: 'Commodore', hexColor: '#0f0', hoist: true, managed: false }
           ]
         }
       }
@@ -260,7 +260,7 @@ describe('memberSnapshot helpers', () => {
 
     expect(result).toBe(1);
     expect(OfficerProfile.bulkCreate).toHaveBeenCalledWith([
-      expect.objectContaining({ user_id: '1', role_name: 'Fleet Admiral', role_position: 36 })
+      expect.objectContaining({ user_id: '1', role_name: 'Commodore', role_position: 36 })
     ]);
   });
 

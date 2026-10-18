@@ -22,7 +22,7 @@ const createInteraction = (hasPerm = true) => {
       members: { fetch: jest.fn(() => memberObj) },
       roles: { cache: { find: jest.fn(fn => [
         { name: 'Recruit', id: 'r1' },
-        { name: 'Ensign', id: 'r2' },
+        { name: 'Deckhand', id: 'r2' },
         { name: 'Pyro Freelancer Corps', id: 'r3' }
       ].find(fn)) } }
     },

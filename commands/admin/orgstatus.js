@@ -40,14 +40,14 @@ module.exports = {
 
     // Step 3: Get Discord Members with Target Roles
     const targetRoles = [
-        'Ensign',
-        'Lieutenant',
-        'Commander',
+        'Deckhand',
+        'Corsair',
+        'Executive Officer',
         'Captain',
+        'Quartermaster',
+        'Marshal',
         'Commodore',
-        'Admiral',
-        'Fleet Admiral',
-        'Retired Commander',
+        'Retired Executive Officer',
         'Retired Captain'
       ];      
     const roleMembers = await getGuildMembersWithRoles(guild, targetRoles);

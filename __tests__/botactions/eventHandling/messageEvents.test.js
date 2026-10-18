@@ -94,10 +94,10 @@ describe('messageEvents handleMessageCreate', () => {
         allowedChannelNames: ['general'],
         default: ['Base'],
         roles: { admin: ['RolePrompt'] },
-        roleMappings: { admin: ['Commander'] }
+        roleMappings: { admin: ['Executive Officer'] }
       })
     );
-    message.member.roles.cache = [{ name: 'Commander' }];
+    message.member.roles.cache = [{ name: 'Executive Officer' }];
     await messageEvents.handleMessageCreate(message, client);
     expect(mockChatCreate).toHaveBeenCalledWith(
       expect.objectContaining({
