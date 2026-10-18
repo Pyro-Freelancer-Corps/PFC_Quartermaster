@@ -21,7 +21,7 @@ function authMiddleware(req, res, next) {
 
 function requireServerAdmin(req, res, next) {
   const roles = req.user?.roles || [];
-  if (!roles.includes('Fleet Admiral')) {
+  if (!roles.includes('Commodore')) {
     return res.status(403).json({ error: 'Insufficient role' });
   }
   next();

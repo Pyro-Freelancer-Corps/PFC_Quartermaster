@@ -49,8 +49,8 @@ describe('api/auth authMiddleware', () => {
 describe('api/auth requireServerAdmin', () => {
   function mockRes() { return { status: jest.fn().mockReturnThis(), json: jest.fn() }; }
 
-  test('passes with Fleet Admiral role', () => {
-    const req = { user: { roles: ['Fleet Admiral'] } };
+  test('passes with Commodore role', () => {
+    const req = { user: { roles: ['Commodore'] } };
     const res = mockRes();
     const next = jest.fn();
     requireServerAdmin(req, res, next);
